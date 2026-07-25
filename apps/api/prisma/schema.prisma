@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SessionRole {
+  warmup
+  main
+  recovery
+}
+
+enum BlockType {
+  straight
+  superset
+  circuit
+  contrast_pair
+}
+
+enum PrescriptionType {
+  reps
+  reps_per_side
+  distance
+  time
+}
+
+enum ExerciseLinkType {
+  progression
+  regression
+  variation
+  alternative
+}
+
+enum Emphasis {
+  primary
+  secondary
+}
+
+enum EvidenceRating {
+  strong
+  moderate
+  limited
+  conflicting
+  insufficient
+}
+
+// A sport is a first-class entity from day one, even though "padel" is the
+// only row for a long while — the exercise graph, physical qualities, and
+// sport-transfer claims are all designed to generalize across sports; only
+// the product surface (mobile app, UI) is padel-specific for v1.
+model Sport {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  programs  Program[]
+  transfers SportTransfer[]
+}
+
+// A periodized block of training assigned to an athlete. Athlete/coach
+// identity is deliberately not modeled yet (no auth/users in this pass) —
+// coachNote is a placeholder for program-level intent until that layer exists.
+model Program {
+  id        String    @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  coachNote String?
+  sport     Sport     @relation(fields: [sportId], references: [id])
+  sportId   String
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// A training day. "role" captures the shared Mov Prep pattern directly:
+// warmup sessions are stored once and referenced like any other session,
+// distinguished by role rather than by convention or position in a list.
+model Session {
+  id        String      @id @default(cuid())
+  label     String
+  order     Int
+  role      SessionRole @default(main)
+  program   Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  programId String
+  blocks    Block[]
+
+  @@unique([programId, order])
+}
+
+// A group of exercises performed together. "purpose" is the coach's stated
+// design intent for this specific grouping — the middle layer of "why",
+// distinct from why any single exercise in it exists.
+model Block {
+  id        String          @id @default(cuid())
+  order     Int
+  blockType BlockType       @default(straight)
+  rounds    Int?
+  purpose   String?
+  session   Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  exercises BlockExercise[]
+
+  @@unique([sessionId, order])
+}
+
+// The prescription: the only place exercise data varies per-program. The
+// Exercise it points to never changes based on where it's used.
+model BlockExercise {
+  id               String            @id @default(cuid())
+  order            Int
+  prescriptionType PrescriptionType  @default(reps)
+  sets             Int?
+  repsOrDuration   String
+  load             String?
+  tempo            String?
+  rest             String?
+  instanceNote     String?
+  block            Block             @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  blockId          String
+  exercise         Exercise          @relation(fields: [exerciseId], references: [id])
+  exerciseId       String
+
+  @@unique([blockId, order])
+}
+
+// The canonical knowledge object. Authored once, referenced by every program
+// that uses it. This is the record the AI is required to ground its answers
+// in — search_exercises / get_exercise_detail read from here, never from
+// model memory.
+model Exercise {
+  id                 String          @id @default(cuid())
+  name               String          @unique
+  aliases            String[]        @default([])
+  objective          String
+  description        String?
+  movementComplexity String?
+  contraindications  String?
+  coachingCues       String?
+  evidenceRating     EvidenceRating?
+  videoUrl           String?
+  thumbnailUrl       String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  blockExercises    BlockExercise[]
+  physicalQualities ExercisePhysicalQuality[]
+  muscles           ExerciseMuscle[]
+  equipment         ExerciseEquipment[]
+  linksFrom         ExerciseLink[]      @relation("LinkFrom")
+  linksTo           ExerciseLink[]      @relation("LinkTo")
+  sportTransfers    SportTransfer[]
+}
+
+model PhysicalQuality {
+  id        String                    @id @default(cuid())
+  name      String                    @unique
+  exercises ExercisePhysicalQuality[]
+}
+
+model ExercisePhysicalQuality {
+  exercise   Exercise        @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId String
+  quality    PhysicalQuality @relation(fields: [qualityId], references: [id], onDelete: Cascade)
+  qualityId  String
+  emphasis   Emphasis        @default(primary)
+
+  @@id([exerciseId, qualityId])
+}
+
+model Muscle {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  muscleGroup String?
+  exercises   ExerciseMuscle[]
+}
+
+model ExerciseMuscle {
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId String
+  muscle     Muscle   @relation(fields: [muscleId], references: [id], onDelete: Cascade)
+  muscleId   String
+  emphasis   Emphasis @default(primary)
+
+  @@id([exerciseId, muscleId])
+}
+
+model Equipment {
+  id        String              @id @default(cuid())
+  name      String              @unique
+  exercises ExerciseEquipment[]
+}
+
+model ExerciseEquipment {
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  equipmentId String
+  required    Boolean   @default(true)
+
+  @@id([exerciseId, equipmentId])
+}
+
+// The progressions/regressions/variations/alternatives graph. This is what
+// makes "I don't have this equipment" or "my shoulder hurts" answerable by
+// querying real relationships instead of the model inventing a substitute.
+model ExerciseLink {
+  id               String           @id @default(cuid())
+  relationshipType ExerciseLinkType
+  rationale        String?
+  fromExercise     Exercise         @relation("LinkFrom", fields: [fromExerciseId], references: [id], onDelete: Cascade)
+  fromExerciseId   String
+  toExercise       Exercise         @relation("LinkTo", fields: [toExerciseId], references: [id], onDelete: Cascade)
+  toExerciseId     String
+
+  @@unique([fromExerciseId, toExerciseId, relationshipType])
+}
+
+// "Does this exercise transfer to sport X" as its own evidenced claim, not a
+// fixed field on Exercise — the same exercise can carry different transfer
+// claims, with different evidence ratings, for different sports.
+model SportTransfer {
+  id             String         @id @default(cuid())
+  description    String
+  evidenceRating EvidenceRating
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  sport          Sport          @relation(fields: [sportId], references: [id])
+  sportId        String
+
+  @@unique([exerciseId, sportId])
+}
