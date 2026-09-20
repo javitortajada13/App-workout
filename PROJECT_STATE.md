@@ -524,6 +524,44 @@ Implemented as a result:
   a local Metro server) is designed but not yet implemented — next concrete
   step in this milestone.
 
+**2026-09-20 (cont. 2) — API deployed and confirmed live.** User created the
+Render account, connected GitHub, and deployed the `render.yaml` blueprint.
+Two real-world snags on the way, both resolved and worth remembering:
+
+- First deploy attempt used the wrong branch by default (Render pre-filled
+  `claude/padel-coaching-ai-vision-eqhodv`, which has no `render.yaml` — only
+  `claude/padel-coaching-review-nqm583` does). Corrected in Render's UI.
+- First two `prisma migrate deploy` attempts failed with `P1000:
+  Authentication failed`. Root cause both times was literal `[` `]`
+  characters left around the password when substituting it into the
+  connection string copied from Supabase's "Connect → ORM → Prisma" panel
+  (the brackets are a placeholder marker in Supabase's own snippet, not
+  syntax to keep) — not a real credentials problem, not a special-character
+  encoding problem. Fixed by re-entering the value without the brackets.
+- The connection string in use is Supabase's **session-mode pooler**
+  (`aws-0-ap-northeast-1.pooler.supabase.com:5432`, username
+  `postgres.edljvcpkkygdnsfrpnmm`) as the single `DATABASE_URL`, deliberately
+  *not* the transaction-mode pooler (port 6543, `?pgbouncer=true`) — the
+  transaction-mode pooler doesn't reliably support the session-level
+  features (advisory locks, prepared statements) `prisma migrate deploy`
+  needs. Using one URL for both migration and runtime queries was a
+  deliberate simplification over Prisma's usual `DATABASE_URL`/`DIRECT_URL`
+  split, to avoid depending on unverified Prisma 7 config-file behavior
+  around `directUrl` (couldn't check current docs from this sandbox).
+- `render.yaml`'s `startCommand` now also runs `db:seed` on every boot
+  (`prisma migrate deploy && prisma db seed && node ...`) — safe because
+  `seed.ts` only ever upserts, so the deployed database always has the demo
+  program without a separate manual step.
+- **Confirmed live**: `https://app-workout-api.onrender.com/health` returns
+  `{"status":"ok"}` and `/programs` returns the real seeded "julio y el
+  resto" program, served from the real Supabase Postgres instance, reachable
+  from the open internet (tested from Safari on the user's iPad, not from
+  the dev sandbox, which still cannot reach it or Supabase directly).
+- **Not yet done**: the mobile app has not been pointed at this URL yet
+  (`EXPO_PUBLIC_API_URL` still needs updating from `localhost`), and nothing
+  has been published via EAS Update yet — the phone has not run the app at
+  all so far in this milestone. That's the next concrete step.
+
 ---
 
 ## References
