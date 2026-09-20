@@ -416,12 +416,17 @@ decision above:
 
 ### Milestone boundaries (do not blur these)
 
-- **M1 (in progress)** — Supabase project + JWT verification in Fastify +
-  `Profile` table + Expo login screen + auth-gated root layout. Success
-  criterion: log in as a real test athlete from an iPhone via Expo Go and
-  reach the existing (still content-unfiltered) app. Existing read
-  endpoints (`/programs`, etc.) are **not** locked down or athlete-scoped
-  yet — that is explicitly M2's job, along with `Program.athleteId`/`status`.
+- **M1 — DONE, confirmed 2026-09-21.** Supabase project + JWT verification
+  in Fastify + `Profile` table + Expo login screen + auth-gated root
+  layout. Success criterion (log in as a real test athlete and reach the
+  app) confirmed on **both** targets: the native app via Expo Go on the
+  user's iPhone, and the free web deployment
+  (`https://app-workout-web.onrender.com`) in Safari — both show the real
+  seeded "julio y el resto" program after logging in with the test
+  athlete's credentials. Existing read endpoints (`/programs`, etc.) are
+  still **not** locked down or athlete-scoped — that is explicitly M2's
+  job, along with `Program.athleteId`/`status`. Do not start M2 without
+  the user's explicit go-ahead (per their instruction this milestone).
 - **M2 (not started, requires explicit approval)** — athlete-scoped
   `/programs`, `Program.athleteId`/`coachId`/`status`, basic athlete
   management API.
