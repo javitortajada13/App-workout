@@ -351,8 +351,7 @@ sync with the code the way Section 11's contradictions were allowed to.
   during development.
 - **Authentication**: **Supabase Auth**, not custom JWT/bcrypt. Supabase
   owns identity (`auth.users`, password hashing, reset, sessions/refresh
-  tokens). The existing self-hosted Postgres/Prisma application database is
-  **kept as-is** — it is not migrated to Supabase's hosting. The two are
+  tokens). The two are
   linked by a new `Profile` table in the app's own database, keyed by the
   Supabase user's UUID, holding app-specific fields (`role`, `name`,
   `athleteLevel`). The Fastify API verifies Supabase-issued JWTs (via the
@@ -376,6 +375,44 @@ sync with the code the way Section 11's contradictions were allowed to.
   throwaway work, but should not be mistaken for the final decision.
 - **AI coach**: untouched and deprioritized for this entire milestone,
   exactly as before.
+
+### Cloud-first hosting pivot (superseded a section-13 decision above, 2026-09-20)
+
+**CONFIRMED, user decision.** The real hardware situation is iPhone + iPad
+only (a 2013 MacBook exists but is explicitly excluded as unreliable). This
+rules out the originally-assumed workflow of running the API/Postgres on a
+local machine on the same Wi-Fi as the phone for device testing. It was also
+discovered that the coding sandbox used to develop this project cannot be
+reached by a physical device under any circumstances (no inbound
+reachability, and tunneling tools are protocol-blocked by its egress proxy
+regardless of any host-allowlist change) — see the M1 implementation log
+below for how this was confirmed. Consequence, revising the plain-auth
+decision above:
+
+- **Supabase's Postgres now hosts the application's own tables too**, not
+  just `auth.*`. This is a hosting-location choice, not an architecture
+  change: Prisma remains the ORM, `schema.prisma` is unchanged, and Prisma
+  only ever manages the `public` schema — it never touches Supabase's own
+  `auth` schema. `DATABASE_URL` simply points at Supabase's Postgres
+  connection string instead of a self-hosted instance.
+- **The Fastify API is deployed to a real hosting provider** (Render, via
+  `render.yaml` at the repo root — a "Blueprint" so the service config lives
+  in the repo, not hand-clicked in a dashboard) rather than run locally or
+  inside the dev sandbox. Secrets (`DATABASE_URL`, `SUPABASE_URL`,
+  `ANTHROPIC_API_KEY`) are entered directly into Render's own dashboard
+  (`sync: false` in the blueprint) — never committed, never pasted into
+  chat.
+- **The mobile app is distributed via Expo/EAS Update, opened through the
+  existing Expo Go app** — no locally-run Metro dev server. This requires
+  every dependency to stay within what Expo Go's fixed client bundles
+  natively; a session-storage approach that needed extra native modules
+  (`expo-secure-store` + a manual AES layer) was replaced with plain
+  `@react-native-async-storage/async-storage`, which Expo Go supports
+  natively, specifically to avoid that risk (see the implementation log).
+- This whole pivot exists **only** because of the confirmed hardware/sandbox
+  constraint — it is not a general recommendation against local dev, and
+  should not be assumed to extend to any future contributor who does have a
+  normal dev machine.
 
 ### Milestone boundaries (do not blur these)
 
@@ -411,11 +448,10 @@ Tokyo region, "Confirm email" disabled for the dev/test phase). Implemented:
 - `GET /me` (`apps/api/src/routes/me.ts`): the first protected route, exists
   to prove the verification path end-to-end. Nothing else is locked down
   yet — `/programs` etc. remain open, as scoped for M1.
-- Mobile: `src/lib/supabase.ts` (Supabase client with a `LargeSecureStore`
-  adapter — session objects routinely exceed SecureStore's ~2KB item limit,
-  so the session is AES-encrypted and stored in AsyncStorage, with only the
-  small encryption key in SecureStore; this is Supabase's own documented
-  pattern for Expo/React Native, not a local invention). `src/app/login.tsx`
+- Mobile: `src/lib/supabase.ts` (Supabase client; storage adapter history:
+  first built with a `LargeSecureStore`/AES pattern, then replaced — see the
+  2026-09-20 (cont.) entry below — with plain `AsyncStorage` once the
+  Expo-Go-only distribution constraint became clear). `src/app/login.tsx`
   (email/password form calling `supabase.auth.signInWithPassword`).
   `src/app/_layout.tsx` now checks for a session on launch and conditionally
   renders either the login screen or the existing tab navigator — no new
@@ -443,6 +479,50 @@ Tokyo region, "Confirm email" disabled for the dev/test phase). Implemented:
   This is a property of this specific coding environment's configured
   network policy, not of Supabase, the code, or wherever the app is
   eventually run for real.
+
+**2026-09-20 (cont.)** — user confirmed the test athlete account was created
+via the Supabase dashboard. Real hardware situation clarified (iPhone + iPad
+only; a 2013 MacBook is explicitly excluded as unreliable), which combined
+with the sandbox networking findings above to rule out any local-machine or
+in-sandbox path to physical-device testing entirely. Further confirmed: this
+sandbox also cannot reach `expo.dev`, `api.expo.dev`, `loca.lt`, or
+`trycloudflare.com` (same firm 403 policy denial) — ruling out every tunnel
+option, not just ngrok. User chose the cloud-first pivot recorded above.
+Implemented as a result:
+
+- `render.yaml` added at the repo root (Render "Blueprint" for the API —
+  see the pivot section above for why secrets are `sync: false`).
+- `apps/api/package.json`: added `db:migrate:deploy` (`prisma migrate
+  deploy` — the non-interactive, production-safe command, as opposed to
+  `db:migrate`'s `migrate dev`) and a `postinstall` hook running `prisma
+  generate` (the generated client is gitignored and must exist before
+  `tsc` can build, in any environment).
+- Mobile storage adapter simplified from `LargeSecureStore` (SecureStore +
+  manual AES via `aes-js` + `react-native-get-random-values`) to plain
+  `AsyncStorage`, and the now-unused packages removed. Reason: distribution
+  is now via Expo Go (no custom dev client — see the pivot section), whose
+  native module set is fixed and curated; `react-native-get-random-values`
+  is not a standard Expo SDK package and its presence in Expo Go could not
+  be confirmed from this sandbox (network-blocked from checking), so it was
+  removed as an avoidable risk rather than shipped unverified. Plain
+  AsyncStorage session storage is a widely-used, well-documented baseline
+  for Supabase + Expo Go and is the right tradeoff until the app moves to a
+  custom EAS dev client, at which point SecureStore-backed storage is worth
+  revisiting.
+- Verified locally end-to-end, simulating exactly what Render will run:
+  `npm install && npm run build --workspace=apps/api` succeeds, the compiled
+  output actually lands at `apps/api/dist/src/index.js` (not
+  `apps/api/dist/index.js` — `tsconfig.json` has no explicit `rootDir`, so
+  `render.yaml`'s start command was corrected to match), `npm run
+  db:migrate:deploy --workspace=apps/api` applies cleanly against a real
+  Postgres, and the compiled server, given real env vars the way Render
+  would inject them, correctly serves `/health` and `/programs` and
+  correctly 401s `/me`.
+- **Still pending**: the user has not yet created a Render account / deployed
+  the blueprint, so the API has no real public URL yet. The Expo/EAS Update
+  side (how the mobile bundle actually reaches the phone via Expo Go without
+  a local Metro server) is designed but not yet implemented — next concrete
+  step in this milestone.
 
 ---
 

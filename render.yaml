@@ -1,0 +1,25 @@
+# Render "Blueprint" for the API service. Lets the app be deployed by
+# connecting this repo in the Render dashboard, instead of hand-configuring
+# build/start commands there -- see PROJECT_STATE.md section 13 for why
+# (no reliable local machine, so the API needs to run somewhere on the real
+# internet that both this dev process and a physical iPhone can reach).
+#
+# DATABASE_URL, SUPABASE_URL and ANTHROPIC_API_KEY are intentionally marked
+# `sync: false`: Render will prompt for them once in its own dashboard and
+# store them there -- they must never be written into this file or any
+# other file in the repo.
+services:
+  - type: web
+    name: app-workout-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=apps/api
+    startCommand: npm run db:migrate:deploy --workspace=apps/api && node apps/api/dist/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
