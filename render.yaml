@@ -23,3 +23,25 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+
+  # A free, install-nothing way for anyone to open the app: a plain link in
+  # Safari/Chrome, no App Store, no Apple Developer Program, no Expo Go.
+  # Expo Router's web target already produces a static export (confirmed:
+  # `npx expo export -p web` succeeds and prerenders every route including
+  # /login) -- Render's static-site hosting just serves those files, no
+  # Node process needed, and (unlike the free web-service plan above) it
+  # doesn't spin down after inactivity. The env values below are the same
+  # public, non-secret ones baked into the mobile app's own EAS Update
+  # publishes -- see .github/workflows/eas-update.yml.
+  - type: web
+    name: app-workout-web
+    runtime: static
+    buildCommand: npm install && cd apps/mobile && npx expo export -p web
+    staticPublishPath: apps/mobile/dist
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://app-workout-api.onrender.com
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        value: https://edljvcpkkygdnsfrpnmm.supabase.co
+      - key: EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE
