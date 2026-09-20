@@ -691,9 +691,39 @@ any distribution to another person's iPhone (TestFlight or otherwise). The
 only two real options are (a) pay for that program and use EAS Build +
 TestFlight for a real app-icon experience, or (b) keep using Expo Go (free)
 for the father too, same setup as this session's testing. Free + no Expo
-Go is only possible on Android, which does not apply here. Not decided
-yet -- surface this choice again before treating "give dad the app" as a
-distribution-solved problem.
+Go is only possible on Android, which does not apply here.
+
+**Resolved, 2026-09-20/21**: a third option was found and is now the
+plan -- a genuinely free web deployment, no App Store/Apple Developer
+Program/Expo Go dependency at all, no domain purchase needed (Render's
+free `*.onrender.com` subdomain is enough). Both the "Personal Team +
+Xcode" and AltStore/Sideloadly free-sideloading routes were considered
+and rejected: both are real but both inherit Apple's 7-day free
+provisioning expiry, requiring periodic re-signing from a Mac -- not
+practical given no reliable computer exists for this user (see the
+cloud-first pivot above). The web path avoids the whole category of
+problem.
+
+Implementation: `apps/mobile/src/lib/supabase.ts`'s storage adapter is
+now `Platform.OS === "web" ? localStorage-based : expo-secure-store`.
+Testing `npx expo export -p web` first failed with the same class of bug
+as the native SecureStore saga (`expo-secure-store` has no web
+implementation at all -- confirmed via the actual error,
+`getValueWithKeyAsync is not a function` -- not a guess), fixed by the
+platform split. A second Render Blueprint service, `app-workout-web`
+(`runtime: static`, no spin-down unlike the API's free web-service plan),
+was added to `render.yaml` and deployed via the same Blueprint's
+"Manual sync" -- **confirmed live and working**: the login screen renders
+correctly at `https://app-workout-web.onrender.com`.
+
+Decision going forward: build both targets in parallel rather than
+picking one -- they are the same Expo Router codebase (web is just
+another platform target, not a fork), so this costs little beyond
+occasionally handling a platform-specific quirk like the one just fixed.
+Web is the near-term path to get the father (and any early real users)
+onto the app with zero cost and zero install friction; the native app
+remains the long-term target once there's a reason to invest the
+$99/year Apple Developer Program (e.g. real paying clients).
 
 ---
 
