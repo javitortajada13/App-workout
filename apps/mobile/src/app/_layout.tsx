@@ -18,7 +18,16 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((error) => {
+        // Never leave the app stuck on the loading spinner -- fall through
+        // to the login screen and let the user retry rather than hanging
+        // forever with no visible error.
+        console.error("Failed to read auth session", error);
+        setSession(null);
+      });
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
     });
