@@ -52,6 +52,17 @@ enum UserRole {
   athlete
 }
 
+// An athlete can have multiple programs over time, but normally only one
+// ACTIVE program at a time -- programs are never deleted or overwritten,
+// just archived when a new one replaces them. "draft" exists for a program
+// a coach is still building (see M4) that shouldn't show up for the athlete
+// yet.
+enum ProgramStatus {
+  draft
+  active
+  archived
+}
+
 // Identity lives in Supabase Auth (auth.users) -- this table is the app-side
 // profile, linked by id (the Supabase user's uuid). We never store or manage
 // passwords here. V1 has exactly one coach; role is an enum rather than a
@@ -67,6 +78,9 @@ model Profile {
   athleteLevel String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  programsAsAthlete Program[] @relation("AthletePrograms")
+  programsAsCoach   Program[] @relation("CoachPrograms")
 }
 
 // A sport is a first-class entity from day one, even though "padel" is the
@@ -80,20 +94,29 @@ model Sport {
   transfers SportTransfer[]
 }
 
-// A periodized block of training assigned to an athlete. Athlete/coach
-// identity is deliberately not modeled yet (no auth/users in this pass) —
-// coachNote is a placeholder for program-level intent until that layer exists.
+// A periodized block of training assigned to an athlete. athleteId/coachId
+// are nullable because existing seeded programs predate auth and have no
+// owner yet -- assigning one is a deliberate action (see
+// routes/athletes.ts), not something a migration should guess at. status
+// defaults to "active" so an unassigned legacy program keeps behaving
+// exactly as it did before this field existed; it only matters once a
+// route actually filters by it.
 model Program {
-  id        String    @id @default(cuid())
+  id        String        @id @default(cuid())
   name      String
   startDate DateTime
   endDate   DateTime
   coachNote String?
-  sport     Sport     @relation(fields: [sportId], references: [id])
+  status    ProgramStatus @default(active)
+  sport     Sport         @relation(fields: [sportId], references: [id])
   sportId   String
+  athlete   Profile?      @relation("AthletePrograms", fields: [athleteId], references: [id])
+  athleteId String?       @db.Uuid
+  coach     Profile?      @relation("CoachPrograms", fields: [coachId], references: [id])
+  coachId   String?       @db.Uuid
   sessions  Session[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 // A training day. "role" captures the shared Mov Prep pattern directly:

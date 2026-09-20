@@ -56,3 +56,13 @@ export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
 
   req.user = await resolveProfile(supabaseId, email);
 }
+
+// Use as a second onRequest hook after `authenticate` (Fastify runs
+// onRequest hooks in array order, so req.user is guaranteed set by the
+// time this runs). Kept separate from `authenticate` rather than a
+// role param, since most routes need no role check at all.
+export async function requireCoach(req: FastifyRequest, reply: FastifyReply) {
+  if (req.user?.role !== "coach") {
+    return reply.code(403).send({ error: "Coach role required" });
+  }
+}

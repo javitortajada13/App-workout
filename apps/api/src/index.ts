@@ -1,6 +1,7 @@
 import "dotenv/config";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { registerAthleteRoutes } from "./routes/athletes.js";
 import { registerChatRoutes } from "./routes/chat.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerProgramRoutes } from "./routes/programs.js";
@@ -14,6 +15,7 @@ app.get("/health", async () => ({ status: "ok" }));
 registerProgramRoutes(app);
 registerChatRoutes(app);
 registerMeRoutes(app);
+registerAthleteRoutes(app);
 
 const port = Number(process.env.PORT) || 3000;
 
