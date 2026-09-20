@@ -279,27 +279,38 @@ from a plausible-sounding guess.
 
 ## 11. Contradictions between artifacts, CLAUDE.md, and the implementation
 
-**UNRESOLVED DECISION** (all of these — do not resolve without asking the user):
+**RESOLVED 2026-09-20 by explicit user decision** — see Section 13 for the
+actual decisions made. Kept below, unedited, as the historical record of
+what was ambiguous and why; do not re-litigate these, but do not delete this
+record either.
 
 1. **Navigation hierarchy** — see Section 2. Artifact proposes a Block
    screen and a Profile-gated entry; `CLAUDE.md` proposes a simpler
    4-tab-plus-drilldown; the code matches neither exactly (no Block screen
-   at all).
+   at all). → **Resolved**: target UX is the screenshot flow (`Profile →
+   Training → Program → Day/Session → inline Blocks → Exercise detail`), no
+   separate Block screen, ever. Interim scaffolding (current tabs) is
+   acceptable while building, but is not the final target.
 2. **Program ownership** — the `padel-coach-data-model.md` artifact's ER
    diagram lists `coach_id`/`athlete_id` directly on `PROGRAM`. The actual
    schema has neither field — only `coachNote` — and `CLAUDE.md` frames the
    absence of any owner model as a deliberate, not-yet-designed decision.
-   The artifact predates that explicit deferral.
+   The artifact predates that explicit deferral. → **Resolved**: single
+   coach, multiple athletes, each with a real account; a `Profile` table
+   plus `Program.athleteId`/`coachId`/`status` are now in scope (see
+   Section 13).
 3. **Difficulty as "three axes"** — the artifact argues for three separate
    axes (intrinsic movement complexity, athlete level, prescribed load).
    Only `movementComplexity` is modeled anywhere; "athlete level" has no
-   representation in schema or shared types.
+   representation in schema or shared types. → **Resolved**: `athleteLevel`
+   will exist as a simple, unstructured profile field only; no adaptive
+   logic in V1.
 4. **Coach chat citations** — the mockup shows tappable in-chat citations;
    the API supports it (`citedExerciseIds`); the real Coach screen doesn't
-   use it.
+   use it. → **Resolved**: explicitly deferred past this V1 milestone.
 5. **Visual identity** — the mockup artifact specifies a dark-canvas/teal
    design system; the actual Expo app is still on unbranded template
-   defaults.
+   defaults. → **Resolved**: explicitly deferred past this V1 milestone.
 
 Nothing else in the codebase contradicts `CLAUDE.md` — the seed-data gaps,
 the AI-loop verification status, and the scope cuts it describes all check
@@ -323,6 +334,71 @@ before acting on any of these:
 5. Populate `load`/`tempo`/`rest` and video assets once that data exists.
 6. Resolve the navigation-hierarchy contradiction (item 1 above) with an
    explicit decision rather than further silent drift.
+
+## 13. V1 scope decisions and Milestone 1 (in progress)
+
+**CONFIRMED (user decisions, dated 2026-09-20)** — this section is a living
+record of what was decided and how far implementation has actually gotten.
+Update it as each milestone below progresses; do not let it drift out of
+sync with the code the way Section 11's contradictions were allowed to.
+
+### V1 product decisions
+
+- **Coach/admin surface**: a **separate web-based admin app** (new package,
+  not yet created), used only by the coach. The Expo mobile app stays
+  athlete-only and focused on consuming/following programs. Prisma Studio
+  is not the product UI — it may still be used as a raw inspection tool
+  during development.
+- **Authentication**: **Supabase Auth**, not custom JWT/bcrypt. Supabase
+  owns identity (`auth.users`, password hashing, reset, sessions/refresh
+  tokens). The existing self-hosted Postgres/Prisma application database is
+  **kept as-is** — it is not migrated to Supabase's hosting. The two are
+  linked by a new `Profile` table in the app's own database, keyed by the
+  Supabase user's UUID, holding app-specific fields (`role`, `name`,
+  `athleteLevel`). The Fastify API verifies Supabase-issued JWTs (via the
+  project's JWKS endpoint — no shared secret needed for verification on
+  currently-created Supabase projects). No self-registration: athlete
+  accounts are created by the coach, with a temporary password shared
+  out-of-band. The Supabase `service_role` key (needed later for
+  server-side account creation) must never be pasted into chat, committed,
+  or placed anywhere except a server-side environment variable.
+- **Athlete/program relationship**: an athlete can have multiple programs
+  over time (history preserved, never deleted/overwritten), but normally
+  exactly one **active** program at a time. This means `Program` needs a
+  `status` field (e.g. `draft` | `active` | `archived`), not just an
+  `athleteId` — assigning a new active program archives the athlete's
+  previous active one rather than replacing it. The athlete-facing app
+  prioritizes/shows the active program.
+- **Navigation target**: the screenshot flow (`Profile → Training → Program
+  → Day/Session → inline Blocks → Exercise detail`) is the actual V1 target
+  UX, not the current scaffold's tab layout. Keeping the current tabs
+  temporarily during development is acceptable if it measurably reduces
+  throwaway work, but should not be mistaken for the final decision.
+- **AI coach**: untouched and deprioritized for this entire milestone,
+  exactly as before.
+
+### Milestone boundaries (do not blur these)
+
+- **M1 (in progress)** — Supabase project + JWT verification in Fastify +
+  `Profile` table + Expo login screen + auth-gated root layout. Success
+  criterion: log in as a real test athlete from an iPhone via Expo Go and
+  reach the existing (still content-unfiltered) app. Existing read
+  endpoints (`/programs`, etc.) are **not** locked down or athlete-scoped
+  yet — that is explicitly M2's job, along with `Program.athleteId`/`status`.
+- **M2 (not started, requires explicit approval)** — athlete-scoped
+  `/programs`, `Program.athleteId`/`coachId`/`status`, basic athlete
+  management API.
+- M3–M7 as previously scoped (exercise-library write API, program-builder
+  write API, the admin web app itself, video playback + nav on mobile,
+  polish) — unchanged by this decision round, see the implementation-plan
+  discussion in this conversation for details; not yet transcribed here in
+  full since M1 hasn't landed.
+
+### M1 implementation log
+
+*(Fill in as steps land — env vars added, migration applied, endpoints
+added, what was tested, what's pending. Empty until the first real step
+completes.)*
 
 ---
 
