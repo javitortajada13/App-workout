@@ -8,6 +8,13 @@
 # expo.dev/accounts/[account]/settings/access-tokens and added under
 # Settings -> Secrets and variables -> Actions in this GitHub repo -- never
 # committed, never pasted into chat).
+#
+# Note on manual runs: GitHub only shows the workflow_dispatch "Run
+# workflow" button once this file exists on the repo's default branch --
+# it won't appear for a workflow that only lives on a feature branch. Until
+# then, trigger a run the same way any other push does: a real commit
+# touching one of the paths below (an empty commit does NOT satisfy a
+# path-filtered push trigger).
 name: Publish Expo update
 
 on:
