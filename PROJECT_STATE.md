@@ -656,6 +656,45 @@ distribution should be treated as unverified until confirmed on-device,
 not assumed safe by category ("first-party-sounding" is not the same as
 first-party).
 
+**2026-09-20 (cont. 5) — a third real-device bug, then the login screen
+rendered correctly.** After the SecureStore fix, `/programs` loaded real
+seeded data from the live API successfully -- but the app landed straight
+on the (tabs) home screen without ever showing login, and tapping "Cerrar
+sesion" visibly did nothing. Root cause: conditionally rendering *which*
+`Stack.Screen` children exist based on `session` (the pattern used since
+M1's first commit) updates React state correctly, but expo-router's
+underlying native-stack navigator does not reliably reconcile a full
+swap of the screen set (four screens down to one) -- it can leave
+whatever was already on screen displayed regardless of the state change.
+Replaced with `Stack.Protected` (expo-router's current, purpose-built API
+for exactly this auth-gating transition) in `_layout.tsx`. Confirmed on a
+real device: the login screen now renders correctly on first launch.
+Login itself (real test-athlete credentials through to seeing the app)
+has not yet been exercised -- that's the very last step before declaring
+M1's success criterion met.
+
+Also surfaced along the way, unrelated to the auth-gating bug: Expo's
+per-project "Preview" QR code can be **generated once and then serve
+stale content** across later publishes if the same browser tab isn't
+refreshed and "Preview" re-clicked -- several rounds of "same error after
+a fix that should have changed it" traced back to this, not to the fixes
+themselves. Regenerate the QR (reload the branch page, click Preview
+again) after every new publish rather than reusing an old one.
+
+**Distribution decision now pending, raised by the user, not yet
+resolved**: the intended real-world test user is the user's father
+specifically (not a generic "first client"), and he has an iPhone. Told
+the user plainly: there is no free way to get a standalone, Expo-Go-free
+app onto an iPhone that isn't a registered Apple developer's own device --
+Apple requires a paid Apple Developer Program membership ($99/year) for
+any distribution to another person's iPhone (TestFlight or otherwise). The
+only two real options are (a) pay for that program and use EAS Build +
+TestFlight for a real app-icon experience, or (b) keep using Expo Go (free)
+for the father too, same setup as this session's testing. Free + no Expo
+Go is only possible on Android, which does not apply here. Not decided
+yet -- surface this choice again before treating "give dad the app" as a
+distribution-solved problem.
+
 ---
 
 ## References
