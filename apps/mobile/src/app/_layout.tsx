@@ -8,11 +8,13 @@ import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/lib/supabase";
 
 // `undefined` = still checking for a stored session, `null` = confirmed
-// logged out. Conditionally rendering which Stack.Screen entries exist is a
-// long-standing expo-router pattern for gating a whole app behind auth --
-// simpler and more version-stable than newer navigator-specific auth APIs,
-// which matters here since apps/mobile/AGENTS.md flags this SDK's
-// navigation APIs as having changed recently.
+// logged out. Uses Stack.Protected (the current expo-router API for
+// auth-gated navigation) rather than conditionally rendering which
+// Stack.Screen entries exist: the latter looked like a simpler, more
+// stable choice, but real-device testing showed it going stale after
+// sign-out -- state updated, but the native stack never reconciled which
+// screens should exist, leaving the previous (tabs) content on screen.
+// Stack.Protected exists specifically to handle that transition correctly.
 export default function RootLayout() {
   const theme = useTheme();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -44,16 +46,15 @@ export default function RootLayout() {
 
   return (
     <Stack>
-      {session ? (
-        <>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="program/[id]" options={{ title: "Programa" }} />
-          <Stack.Screen name="session/[id]" options={{ title: "Sesion" }} />
-          <Stack.Screen name="exercise/[id]" options={{ title: "Ejercicio" }} />
-        </>
-      ) : (
+      <Stack.Protected guard={!!session}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="program/[id]" options={{ title: "Programa" }} />
+        <Stack.Screen name="session/[id]" options={{ title: "Sesion" }} />
+        <Stack.Screen name="exercise/[id]" options={{ title: "Ejercicio" }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!session}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
-      )}
+      </Stack.Protected>
     </Stack>
   );
 }
