@@ -593,6 +593,69 @@ secret, safe to reference). Implemented:
   branch, and the Expo dashboard's "Updates" page for the project should
   offer a QR code that Expo Go can scan directly.
 
+**2026-09-20 (cont. 4) — real-device testing, two more real bugs found and
+fixed.** `EXPO_TOKEN` created (an Expo "robot user" with the Developer
+role, not a personal access token -- Expo's current recommended pattern for
+CI) and added as a GitHub secret. First publish succeeded, but scanning the
+QR failed with `403: ... requires authentication` -- the Expo project is
+private to the `javitortajada13s-team` account, so Expo Go itself needs the
+user logged into the same Expo account before it can open it (unrelated to
+Supabase auth; this is Expo's own access control on the private project).
+Resolved via a password reset on the Expo account (it was created via
+GitHub OAuth, which Expo Go's mobile login screen doesn't offer a direct
+button for -- only email/password or SSO).
+
+Once past that, two real app bugs surfaced from actual device testing,
+neither visible from typechecking or this sandbox's local checks:
+
+1. **Silent infinite hang**: `apps/mobile/src/app/_layout.tsx` called
+   `supabase.auth.getSession().then(...)` with no `.catch()`. Any rejection
+   left `session` at `undefined` forever, showing the loading spinner with
+   no error, indistinguishable from a slow network. Fixed by falling
+   through to the login screen on failure.
+2. **AsyncStorage's native module is not present in Expo Go**: real error
+   `"Native module is null, cannot access legacy storage"`. The original
+   guess was a version mismatch (Expo Go 57 vs. the installed `^3.1.1`,
+   a very recent major likely aimed at SDK 58) -- downgrading to `2.2.0`
+   made no difference, proving the real cause: Expo Go's fixed native
+   module set simply does not include
+   `@react-native-async-storage/async-storage` at all, regardless of JS
+   version, because it is a third-party community package, not part of the
+   Expo SDK. **This directly contradicts the earlier assumption (recorded
+   above) that AsyncStorage was the "safe" choice and SecureStore was the
+   risk** -- it was backwards: `expo-secure-store` is first-party Expo and
+   always bundled in Expo Go; AsyncStorage is not. Switched the Supabase
+   storage adapter to `expo-secure-store` directly (no AsyncStorage, no AES
+   wrapper). SecureStore's ~2KB per-item limit remains a known open risk for
+   large sessions -- accepted for now since it would fail loudly (a thrown
+   error) rather than silently; revisit with a proper encrypted-large-value
+   pattern once/if the app moves to a custom EAS dev client where community
+   native modules are actually available.
+
+Separately, the GitHub Actions workflow itself broke twice on unrelated
+mechanics, both fixed in `.github/workflows/eas-update.yml`:
+- `workflow_dispatch`'s "Run workflow" button doesn't appear for a workflow
+  that only exists on a feature branch (GitHub only reads dispatch triggers
+  from the default branch) -- worked around by triggering via a real push
+  instead each time.
+- `--message "${{ github.event.head_commit.message }}"` broke when a commit
+  message (one of these fixes' own message) contained a literal `"` --
+  the embedded quote closed the shell argument early, and the rest of the
+  message was parsed as stray unquoted arguments. Fixed by routing the
+  message through an intermediate `env:` variable instead of interpolating
+  directly into the `run:` script -- also the pattern GitHub's own security
+  docs recommend generally, not just for this breakage.
+
+**Lesson worth generalizing**: this sandbox's inability to reach
+`api.expo.dev`/`reactnative.directory` (see earlier in this section) meant
+every native-module compatibility question in this milestone had to be
+answered empirically on the real device rather than checked against Expo's
+compatibility data up front. Two of three storage-related guesses made
+under that constraint were wrong. Future dependency choices for Expo-Go
+distribution should be treated as unverified until confirmed on-device,
+not assumed safe by category ("first-party-sounding" is not the same as
+first-party).
+
 ---
 
 ## References
