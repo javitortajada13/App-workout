@@ -811,6 +811,22 @@ tonight, nothing about what the father already sees has changed, and the
 new athlete-scoped machinery (`/me/programs`, `/athletes`,
 `assign-program`) is built and tested but not yet wired into any UI.
 
+**Verification note**: this migration was fully validated against the
+local dev Postgres (typecheck, build, `prisma migrate status` clean, and
+the archive-on-reassign transaction logic tested directly against real
+data) and pushed so Render's own `migrate deploy` step picks it up on
+deploy, exactly as M1's schema change did. Unlike earlier in this session,
+this sandbox's network policy now also blocks `onrender.com` (confirmed
+via the proxy's own status endpoint), so — for the first time — the live
+API's post-deploy behavior could **not** be directly curled and confirmed
+from here the way M1's was. The GitHub Actions side (EAS Update
+republish, triggered because this push touched `packages/shared/**`) did
+complete successfully. Worth a quick manual check when back online: open
+`https://app-workout-api.onrender.com/health` and `/programs` and confirm
+both still respond normally (they should — the change is purely additive
+and `db:seed` upserts the existing program without touching the new
+fields).
+
 **One thing needed from the user, whenever they're back**: decide who the
 coach is (log into the app once with the Supabase account meant to be the
 coach — it auto-provisions as `role: athlete` on first login same as
