@@ -49,4 +49,11 @@ jobs:
 
       - name: Publish update
         working-directory: apps/mobile
-        run: npx eas-cli@latest update --branch main --message "${{ github.event.head_commit.message }}" --non-interactive
+        env:
+          # Passed via env rather than interpolated straight into the run
+          # script -- the commit message routinely contains quotes (it did
+          # here), which broke naive `--message "${{ ... }}"` interpolation:
+          # the shell saw the embedded quote as closing the argument early.
+          # An env var's value isn't re-parsed for shell metacharacters.
+          UPDATE_MESSAGE: ${{ github.event.head_commit.message }}
+        run: npx eas-cli@latest update --branch main --message "$UPDATE_MESSAGE" --non-interactive
