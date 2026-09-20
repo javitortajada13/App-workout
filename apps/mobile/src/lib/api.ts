@@ -7,10 +7,19 @@ import type {
   SessionDetail,
 } from "@app-workout/shared";
 
+import { supabase } from "./supabase";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+async function authHeaders(): Promise<HeadersInit> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`);
+  const res = await fetch(`${API_URL}${path}`, { headers: await authHeaders() });
   if (!res.ok) {
     throw new Error(`API error ${res.status} on ${path}`);
   }

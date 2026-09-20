@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { registerChatRoutes } from "./routes/chat.js";
+import { registerMeRoutes } from "./routes/me.js";
 import { registerProgramRoutes } from "./routes/programs.js";
 
 const app = Fastify({ logger: true });
@@ -12,6 +13,7 @@ app.get("/health", async () => ({ status: "ok" }));
 
 registerProgramRoutes(app);
 registerChatRoutes(app);
+registerMeRoutes(app);
 
 const port = Number(process.env.PORT) || 3000;
 

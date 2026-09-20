@@ -47,6 +47,28 @@ enum EvidenceRating {
   insufficient
 }
 
+enum UserRole {
+  coach
+  athlete
+}
+
+// Identity lives in Supabase Auth (auth.users) -- this table is the app-side
+// profile, linked by id (the Supabase user's uuid). We never store or manage
+// passwords here. V1 has exactly one coach; role is an enum rather than a
+// separate Coach/Athlete table so adding more coaches later doesn't require
+// a schema migration, just more rows with role = coach.
+model Profile {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  name         String?
+  role         UserRole @default(athlete)
+  // Deliberately a plain field, no structure or adaptive logic behind it yet
+  // -- see PROJECT_STATE.md section 13.
+  athleteLevel String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // A sport is a first-class entity from day one, even though "padel" is the
 // only row for a long while — the exercise graph, physical qualities, and
 // sport-transfer claims are all designed to generalize across sports; only

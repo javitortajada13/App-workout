@@ -396,9 +396,53 @@ sync with the code the way Section 11's contradictions were allowed to.
 
 ### M1 implementation log
 
-*(Fill in as steps land — env vars added, migration applied, endpoints
-added, what was tested, what's pending. Empty until the first real step
-completes.)*
+**2026-09-20** — Supabase project created (`app-workout`, Asia-Pacific /
+Tokyo region, "Confirm email" disabled for the dev/test phase). Implemented:
+
+- `Profile` model added to `schema.prisma` (`id` = Supabase user UUID,
+  `email`, `name`, `role` enum, `athleteLevel`), migration
+  `20260920102139_add_profile` generated and applied against the local
+  Postgres instance.
+- `apps/api/src/auth.ts`: verifies a bearer token against Supabase's public
+  JWKS (`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`) via `jose`, then
+  auto-provisions a `Profile` row (default role `athlete`) on first sight of
+  a given Supabase user id. No secret key involved — verification only needs
+  `SUPABASE_URL`.
+- `GET /me` (`apps/api/src/routes/me.ts`): the first protected route, exists
+  to prove the verification path end-to-end. Nothing else is locked down
+  yet — `/programs` etc. remain open, as scoped for M1.
+- Mobile: `src/lib/supabase.ts` (Supabase client with a `LargeSecureStore`
+  adapter — session objects routinely exceed SecureStore's ~2KB item limit,
+  so the session is AES-encrypted and stored in AsyncStorage, with only the
+  small encryption key in SecureStore; this is Supabase's own documented
+  pattern for Expo/React Native, not a local invention). `src/app/login.tsx`
+  (email/password form calling `supabase.auth.signInWithPassword`).
+  `src/app/_layout.tsx` now checks for a session on launch and conditionally
+  renders either the login screen or the existing tab navigator — no new
+  navigation library or API, just conditional `Stack.Screen` children.
+  `lib/api.ts` now attaches the current Supabase access token as a bearer
+  header to every API call (harmless no-op today since no route requires it
+  yet). A "Cerrar sesion" button was added to the Profile tab so the login
+  gate can actually be exercised without reinstalling the app.
+- **Verified so far**: both workspaces typecheck clean. Locally: `/health`
+  returns 200, `/me` correctly returns 401 with no token and with a garbage
+  token (does not crash), `/programs` still works unauthenticated exactly as
+  before.
+- **Not yet verified — blocked, not skipped**: this coding sandbox's
+  outbound network policy denies (403, confirmed via repeated attempts, not
+  transient) connections to `supabase.co`, `docs.expo.dev`, `api.expo.dev`,
+  and `reactnative.directory`. This means the `/me` happy path (a real
+  Supabase-issued token verifying successfully) has not been exercised from
+  inside this sandbox, and the test athlete account had to be created
+  through the Supabase dashboard UI (by the user, in their own browser)
+  rather than scripted from here. It also means this sandbox cannot expose
+  its API to the internet via a tunnel for phone testing (ngrok/cloudflared
+  are explicitly unsupported by this proxy, independent of any host
+  allowlist) — reaching the API from a physical iPhone will need the API
+  running on a machine on the same network as the phone, not this sandbox.
+  This is a property of this specific coding environment's configured
+  network policy, not of Supabase, the code, or wherever the app is
+  eventually run for real.
 
 ---
 
