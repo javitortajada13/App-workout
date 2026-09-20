@@ -562,6 +562,37 @@ Two real-world snags on the way, both resolved and worth remembering:
   has been published via EAS Update yet — the phone has not run the app at
   all so far in this milestone. That's the next concrete step.
 
+**2026-09-20 (cont. 3) — EAS Update wired up.** User created a free Expo
+account (personal, GitHub sign-in) and a project via the Expo dashboard
+(`app-workout`, project id `596c5d72-c23b-4e9c-8763-3dcb759183c3` — not
+secret, safe to reference). Implemented:
+
+- `apps/mobile/app.json`: renamed from the generic template identity
+  (`name`/`slug`: "mobile") to `"App Workout"` / `"app-workout"`; added
+  `extra.eas.projectId`, `updates.url` (`https://u.expo.dev/<projectId>`),
+  and `runtimeVersion: { policy: "sdkVersion" }` — the last one specifically
+  matters because it's what makes a published update loadable by plain Expo
+  Go (ties the update's runtime to the Expo SDK version, exactly what Expo
+  Go itself reports) rather than requiring a custom EAS dev client.
+- Added the `expo-updates` package (`~57.0.23`, matching SDK 57) — required
+  at runtime for the app to know how to fetch/apply published updates at
+  all.
+- `.github/workflows/eas-update.yml`: runs `eas update` on every push
+  touching `apps/mobile/**` or `packages/shared/**`, using a GitHub Actions
+  secret `EXPO_TOKEN` for auth. This runs on GitHub's own runners
+  specifically because the dev sandbox cannot reach `expo.dev`/`api.expo.dev`
+  at all (confirmed earlier this milestone) — GitHub Actions has normal
+  internet access, sidestepping that restriction entirely. The workflow also
+  sets `EXPO_PUBLIC_API_URL` to the real Render URL and the Supabase
+  URL/publishable key as plain (non-secret) env vars, since Expo bakes
+  `EXPO_PUBLIC_*` values into the JS bundle at publish time — the phone
+  never reads a `.env` file, so these must be set where the bundle is built.
+- **Not yet done**: the `EXPO_TOKEN` GitHub secret hasn't been created yet,
+  so the workflow hasn't actually run. Once it's added, a push (or the
+  `workflow_dispatch` manual trigger) publishes to the `main` EAS Update
+  branch, and the Expo dashboard's "Updates" page for the project should
+  offer a QR code that Expo Go can scan directly.
+
 ---
 
 ## References

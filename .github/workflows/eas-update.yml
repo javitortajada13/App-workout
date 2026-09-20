@@ -1,0 +1,45 @@
+# Publishes the mobile app's JS bundle to Expo so it can be opened via the
+# Expo Go app, with no locally-running Metro server and no dependency on
+# the dev sandbox's network policy (which cannot reach expo.dev at all --
+# see PROJECT_STATE.md section 13). GitHub's own runners have normal
+# internet access, so this is where `eas update` actually runs.
+#
+# Requires one repo secret: EXPO_TOKEN (an Expo access token, generated at
+# expo.dev/accounts/[account]/settings/access-tokens and added under
+# Settings -> Secrets and variables -> Actions in this GitHub repo -- never
+# committed, never pasted into chat).
+name: Publish Expo update
+
+on:
+  push:
+    branches:
+      - claude/padel-coaching-review-nqm583
+    paths:
+      - "apps/mobile/**"
+      - "packages/shared/**"
+      - ".github/workflows/eas-update.yml"
+  workflow_dispatch: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Not secrets -- the API's public URL and Supabase's public
+      # project URL/publishable key, meant to be shipped in a client app.
+      EXPO_PUBLIC_API_URL: https://app-workout-api.onrender.com
+      EXPO_PUBLIC_SUPABASE_URL: https://edljvcpkkygdnsfrpnmm.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Publish update
+        working-directory: apps/mobile
+        run: npx eas-cli@latest update --branch main --message "${{ github.event.head_commit.message }}" --non-interactive
