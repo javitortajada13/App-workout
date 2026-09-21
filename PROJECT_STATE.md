@@ -434,11 +434,13 @@ decision above:
   including a real bug it surfaced: M1's auth path was never actually
   exercised by real app usage, only by manual testing (fixed as part of
   this milestone).
-- M3–M7 as previously scoped (exercise-library write API, program-builder
-  write API, the admin web app itself, video playback + nav on mobile,
-  polish) — unchanged by this decision round, see the implementation-plan
-  discussion in this conversation for details; not yet transcribed here in
-  full since M1 hasn't landed.
+- **M3 — DONE, confirmed 2026-09-21.** Exercise-library write API (see the
+  M3 implementation log near the end of this file). No UI consumes it yet
+  -- that's M5 (the admin web app).
+- M4–M7 as previously scoped (program-builder write API, the admin web app
+  itself, video playback + nav on mobile, polish) — unchanged by this
+  decision round, see the implementation-plan discussion in this
+  conversation for details; not yet transcribed here in full.
 
 ### M1 implementation log
 
@@ -894,8 +896,64 @@ logged in as `atleta1@test.com` (coach) and separately as
 "julio y el resto" via the new `GET /me/programs` path. This is the
 first M1/M2 verification that closes the gap the auto-provisioning bug
 exposed: confirmed through the actual authenticated flow, not just
-visible UI. M3 (exercise-library write API) is next, not started, and
-per the standing rule should not start without the user's go-ahead.
+visible UI.
+
+### M3 implementation log
+
+**2026-09-21** — user said "Quiero que te quedes tú trabajando en esto
+todo lo que puedas mientras yo hago otras cosas" (keep working on this as
+much as you can while I do other things), authorizing continued
+autonomous work past M2. Built the exercise-library write API: coach-only
+endpoints so the exercise knowledge graph can grow without a seed-script
+edit + migration every time.
+
+- `apps/api/src/routes/taxonomy.ts` (new): `GET`/`POST` for `/muscles`,
+  `/equipment`, `/physical-qualities`, `/sports`. Reads are public (just
+  reference lookups, needed to populate pickers in a future exercise
+  builder); writes are coach-only.
+- `apps/api/src/routes/exercise-admin.ts` (new), all coach-only:
+  - `POST /exercises`, `PATCH /exercises/:id` — create/update the base
+    exercise fields.
+  - `DELETE /exercises/:id` — **refuses to delete an exercise that's
+    prescribed in any `BlockExercise`** (409 with a count), rather than
+    silently cascading it out of a coach's existing programs. They have
+    to remove it from those blocks first.
+  - `PUT`/`DELETE /exercises/:id/physical-qualities/:qualityId`,
+    `.../muscles/:muscleId`, `.../equipment/:equipmentId` — attach/detach
+    the exercise's relationships, `PUT` is an upsert (idempotent).
+  - `POST /exercises/:id/links`, `DELETE /exercise-links/:id` — the
+    progression/regression/variation/alternative graph. Rejects a link
+    from an exercise to itself and duplicate
+    (from, to, relationshipType) links.
+  - `POST /exercises/:id/sport-transfers`, `PATCH`/`DELETE
+    /sport-transfers/:id` — sport-transfer claims stay their own
+    evidenced record, not a field on Exercise, matching the schema's
+    existing design intent.
+- `apps/api/src/db.ts`: added `isUniqueConstraintError`/
+  `isRecordNotFoundError` helpers (Prisma error codes P2002/P2025) so
+  routes return clean 409/404s instead of raw 500s on a duplicate name or
+  a missing id.
+
+**Verification**: typecheck and build both pass. Structurally verified
+over real HTTP against the local dev server — public taxonomy `GET`s
+return real seeded data, every coach-only write route returns 401 with no
+token (same limitation as M2: this sandbox can't reach Supabase's JWKS to
+mint a real token, so the 200-with-valid-auth path couldn't be curled).
+The actual database logic — duplicate-name rejection, duplicate-link
+rejection, duplicate-sport-transfer rejection, the delete-in-use guard,
+and the not-found error shape — was verified directly against real
+Prisma/Postgres with a throwaway script (not committed): create two
+exercises, attach quality/muscle/equipment, link them, add a sport
+transfer, attempt each documented rejection case and confirm it's
+rejected the right way, attach one to a real `BlockExercise` and confirm
+the usage-count guard would refuse its deletion, then clean everything up.
+All checks passed.
+
+**Not built**: any UI for this. M5 (the admin web app) is what will
+actually call these routes; until then this is backend-only, same
+situation `GET /me/programs` was in before M2's cutover. `GET
+/exercises/:id` and friends (the read side) were already public/unscoped
+from before this pass and still are — see the M2 log's note on that.
 
 ---
 
