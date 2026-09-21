@@ -1589,6 +1589,31 @@ specifically because it's unclear whether "half moon" and "half
 kneeling" landmine press are the same movement or not -- didn't want to
 guess).
 
+### Auto-select Spanish audio track on embedded video (2026-09-21)
+
+The user's real device showed the web video embed working (per the
+earlier session/exercise-detail work), but auto-dubbed YouTube videos
+default to English audio -- viewer has to open the gear icon and switch
+to "Pista de audio: Espanol" by hand each time. Asked whether that could
+be automatic; answered honestly before touching code (couldn't reach
+`developers.google.com` from this sandbox to confirm the IFrame API's
+audio-track methods' exact behavior), then implemented it best-effort
+once the user said to go ahead anyway.
+
+`apps/mobile/src/components/youtube-embed-web.tsx` (new): loads the real
+YouTube IFrame Player API (not a plain `<iframe src=...>` like before)
+and on `onReady` calls `getAvailableAudioTracks()` / `setAudioTrack()`
+to switch to a Spanish dub if the video has one. Wrapped in try/catch and
+feature-detected (`typeof player.setAudioTrack === "function"`) so it
+silently falls back to the default track if the API doesn't support this
+for a given browser, or the video has no Spanish dub -- never a broken
+player. `exercise/[id].tsx` now renders this component (web only, same
+`Platform.OS === "web"` gate as before) instead of the plain iframe.
+**Not verified against a real device** -- same Supabase network block as
+everything else in this session; the user needs to check whether it
+actually auto-switches next time they open an exercise with a dub
+available.
+
 ---
 
 ## References
