@@ -2,25 +2,13 @@ import { createElement, useEffect, useRef } from "react";
 
 // Web-only: loads the real YouTube IFrame Player API (not a plain <iframe>)
 // so we can try to auto-select a Spanish dubbed audio track via
-// getAvailableAudioTracks/setAudioTrack. The audio-track module isn't
-// necessarily loaded yet when `onReady` fires -- confirmed via docs
-// search: the player fires `onApiChange` when it loads (or unloads) a
-// module with its own exposed methods, and that's the signal to poll for
-// newly-available options like audio tracks, not `onReady`. Calling
-// getAvailableAudioTracks() too early (only in onReady, as this used to
-// do) can return an empty list even on a video that does have a Spanish
-// dub, which is exactly the bug a real user hit. Still best-effort
-// overall: if the methods don't exist, or no Spanish track is available
-// for a given video, it silently falls back to the default track.
-//
-// NOT using youtube-nocookie.com as the host: tried it as a fix for a
-// "sign in to confirm you're not a bot" report, but that turned out to
-// be caused by the viewer's own VPN, unrelated to the embed host -- and
-// the privacy-enhanced domain broke the Spanish-dub auto-selection below
-// (most likely: it withholds the personalization data multi-language
-// audio tracks depend on). Reverted; if the bot-check resurfaces for a
-// real reason, the always-visible fallback link on the exercise screen
-// covers it without needing this trade-off.
+// getAvailableAudioTracks/setAudioTrack. Two earlier attempts at this
+// (calling it only in onReady, then adding onApiChange) didn't fix a real
+// user's report of it not working, and this environment can't reach
+// YouTube's own docs to verify the API's exact behavior -- so instead of
+// guessing at a third fix, this version reports what actually happens via
+// onDebug so it can be shown on-screen on the real device.
+// TEMPORARY: remove onDebug/its call sites once the real cause is confirmed.
 declare global {
   interface Window {
     YT?: { Player: new (elementId: string, config: Record<string, unknown>) => YTPlayer };
@@ -30,6 +18,7 @@ declare global {
 
 interface YTAudioTrack {
   languageCode?: string;
+  displayName?: string;
 }
 
 interface YTPlayer {
@@ -57,27 +46,47 @@ function loadYoutubeApi(): Promise<void> {
   return apiLoadPromise;
 }
 
-function preferSpanishAudioTrack(player: YTPlayer) {
+function preferSpanishAudioTrack(player: YTPlayer, source: string, log: (msg: string) => void) {
   try {
-    if (typeof player.getAvailableAudioTracks !== "function") return;
+    if (typeof player.getAvailableAudioTracks !== "function") {
+      log(`[${source}] getAvailableAudioTracks no existe`);
+      return;
+    }
     const tracks = player.getAvailableAudioTracks();
+    log(`[${source}] tracks: ${JSON.stringify(tracks)}`);
     const spanish = tracks?.find((t) => (t.languageCode ?? "").toLowerCase().startsWith("es"));
     if (spanish && typeof player.setAudioTrack === "function") {
       player.setAudioTrack(spanish);
+      log(`[${source}] setAudioTrack llamado con ${JSON.stringify(spanish)}`);
+    } else if (!spanish) {
+      log(`[${source}] no se encontro pista es en la lista`);
+    } else {
+      log(`[${source}] setAudioTrack no existe`);
     }
-  } catch {
-    // Best-effort only -- see file header comment.
+  } catch (e) {
+    log(`[${source}] error: ${String(e)}`);
   }
 }
 
-export function YoutubeEmbedWeb({ videoId, title }: { videoId: string; title: string }) {
+export function YoutubeEmbedWeb({
+  videoId,
+  title,
+  onDebug,
+}: {
+  videoId: string;
+  title: string;
+  onDebug?: (msg: string) => void;
+}) {
   const containerId = `yt-player-${videoId}`;
   const playerRef = useRef<YTPlayer | null>(null);
 
   useEffect(() => {
+    const log = (msg: string) => onDebug?.(msg);
     let cancelled = false;
+    log("cargando API de YouTube...");
     loadYoutubeApi().then(() => {
       if (cancelled || !window.YT) return;
+      log("API cargada, creando player");
       playerRef.current = new window.YT.Player(containerId, {
         videoId,
         playerVars: { enablejsapi: 1 },
@@ -88,14 +97,10 @@ export function YoutubeEmbedWeb({ videoId, title }: { videoId: string; title: st
               iframe.style.width = "100%";
               iframe.style.height = "100%";
             }
-            // Try immediately too -- harmless if the module isn't loaded
-            // yet, and covers any video/browser where it already is.
-            preferSpanishAudioTrack(event.target);
+            preferSpanishAudioTrack(event.target, "onReady", log);
           },
-          // The real signal that the audio-track module (and its data)
-          // has actually loaded -- see file header comment.
           onApiChange: (event: { target: YTPlayer }) => {
-            preferSpanishAudioTrack(event.target);
+            preferSpanishAudioTrack(event.target, "onApiChange", log);
           },
         },
       });
@@ -104,6 +109,7 @@ export function YoutubeEmbedWeb({ videoId, title }: { videoId: string; title: st
       cancelled = true;
       playerRef.current?.destroy?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, containerId]);
 
   return createElement("div", { id: containerId, title, style: { width: "100%", height: "100%" } });

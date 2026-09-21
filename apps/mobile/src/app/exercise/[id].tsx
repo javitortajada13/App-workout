@@ -52,6 +52,7 @@ export default function ExerciseScreen() {
   const router = useRouter();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [videoDebug, setVideoDebug] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,8 +100,19 @@ export default function ExerciseScreen() {
         {Platform.OS === "web" && videoId ? (
           <ThemedView style={styles.videoBlock}>
             <ThemedView style={styles.videoEmbed}>
-              <YoutubeEmbedWeb videoId={videoId} title={exercise.name} />
+              <YoutubeEmbedWeb
+                videoId={videoId}
+                title={exercise.name}
+                onDebug={(msg) => setVideoDebug((prev) => [...prev, msg])}
+              />
             </ThemedView>
+            {/* TEMPORARY diagnostic output -- remove once the Spanish
+                audio-track bug is actually root-caused and fixed. */}
+            {videoDebug.length > 0 && (
+              <ThemedText type="small" style={{ fontFamily: "monospace", fontSize: 10 }}>
+                {videoDebug.join(" | ")}
+              </ThemedText>
+            )}
             {/* YouTube sometimes shows a "sign in to confirm you're not a bot"
                 overlay inside the embed depending on the viewer's network/device
                 -- our code can't detect or bypass that (the iframe's content is
