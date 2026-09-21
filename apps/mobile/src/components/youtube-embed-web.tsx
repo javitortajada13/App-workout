@@ -2,12 +2,16 @@ import { createElement, useEffect, useRef } from "react";
 
 // Web-only: loads the real YouTube IFrame Player API (not a plain <iframe>)
 // so we can try to auto-select a Spanish dubbed audio track via
-// getAvailableAudioTracks/setAudioTrack once the player is ready. YouTube's
-// official docs weren't reachable to confirm these methods' exact behavior
-// across all videos/browsers, so this is best-effort: if the methods don't
-// exist, or no Spanish track is available for a given video, it silently
-// falls back to whatever YouTube would have played by default -- same as
-// before this existed, never a broken player.
+// getAvailableAudioTracks/setAudioTrack. The audio-track module isn't
+// necessarily loaded yet when `onReady` fires -- confirmed via docs
+// search: the player fires `onApiChange` when it loads (or unloads) a
+// module with its own exposed methods, and that's the signal to poll for
+// newly-available options like audio tracks, not `onReady`. Calling
+// getAvailableAudioTracks() too early (only in onReady, as this used to
+// do) can return an empty list even on a video that does have a Spanish
+// dub, which is exactly the bug a real user hit. Still best-effort
+// overall: if the methods don't exist, or no Spanish track is available
+// for a given video, it silently falls back to the default track.
 //
 // NOT using youtube-nocookie.com as the host: tried it as a fix for a
 // "sign in to confirm you're not a bot" report, but that turned out to
@@ -84,6 +88,13 @@ export function YoutubeEmbedWeb({ videoId, title }: { videoId: string; title: st
               iframe.style.width = "100%";
               iframe.style.height = "100%";
             }
+            // Try immediately too -- harmless if the module isn't loaded
+            // yet, and covers any video/browser where it already is.
+            preferSpanishAudioTrack(event.target);
+          },
+          // The real signal that the audio-track module (and its data)
+          // has actually loaded -- see file header comment.
+          onApiChange: (event: { target: YTPlayer }) => {
             preferSpanishAudioTrack(event.target);
           },
         },
