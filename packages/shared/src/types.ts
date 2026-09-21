@@ -46,12 +46,14 @@ export interface ExerciseSummary {
 }
 
 export interface ExerciseLinkRef {
+  id: string;
   relationshipType: ExerciseLinkType;
   rationale: string | null;
   exercise: ExerciseSummary;
 }
 
 export interface SportTransferRef {
+  id: string;
   sportName: string;
   description: string;
   evidenceRating: EvidenceRating;

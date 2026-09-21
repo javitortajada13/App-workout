@@ -1115,6 +1115,38 @@ the coach account (`atleta1@test.com`) at whatever URL Render assigns it
 to confirm the whole thing actually works for a real person, not just in
 a headless browser.
 
+**2026-09-21 (cont.)** — user said "Sigue mientras y ahora lo revisare"
+(keep going, I'll review it now) right after the M5 first-pass report.
+Closed two of the three gaps that report flagged, since they were
+concrete and didn't need any product decision:
+
+- **Fixed the exercise-link/sport-transfer deletion gap**: added `id` to
+  `ExerciseLinkRef` and `SportTransferRef` in
+  `packages/shared/src/types.ts`, and to `loadExerciseDetail`'s mapped
+  output (`apps/api/src/mappers.ts`). `apps/admin`'s exercise editor now
+  has working "Eliminar" buttons for both, calling the
+  `DELETE /exercise-links/:id` / `DELETE /sport-transfers/:id` endpoints
+  that M3 already built but the UI couldn't reach before.
+- **Added edit-in-place to the program builder** (`ProgramEditor.tsx`):
+  a program's header (name/dates/coach note), each session
+  (label/order/role), each block (order/type/purpose), and each
+  block-exercise (order/prescription/reps-or-duration/sets/load/rest) can
+  now be edited, not just added or deleted. Each uses the same toggle-a-
+  small-inline-form-then-`PATCH` pattern.
+
+**Not done, still a real gap**: block-exercise editing only exposes
+`order`/`prescriptionType`/`repsOrDuration`/`sets`/`load`/`rest` inline
+(not `tempo`/`instanceNote`) -- a reasonable subset for now, full parity
+would need a bigger form than fits inline in a table row.
+
+Verified: typecheck across every workspace, `vite build`, and a live
+check against the local dev API confirming `GET /exercises` and
+`GET /exercises/:id` return the new `aliases`/`description` fields (and
+that link/sport-transfer ids are now present) exactly as the fixed
+mapper intends. Not yet re-verified in the actual deployed admin UI --
+still blocked on the same Render Manual Sync action above, and on
+Supabase being reachable to log in for real.
+
 ---
 
 ## References

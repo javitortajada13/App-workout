@@ -6,6 +6,8 @@ import {
   createExerciseLink,
   createSportTransfer,
   deleteExercise,
+  deleteExerciseLink,
+  deleteSportTransfer,
   fetchEquipment,
   fetchExercise,
   fetchExerciseList,
@@ -469,21 +471,27 @@ function LinksSection({
     }
   }
 
+  async function remove(linkId: string) {
+    try {
+      await deleteExerciseLink(linkId);
+      await reload(exerciseId, onChange);
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
   return (
     <div className="card">
       <strong>Progresiones / regresiones / variaciones / alternativas</strong>
       {error && <p className="error">{error}</p>}
       <div className="pill-list">
-        {exercise.links.map((l, i) => (
-          <span className="pill" key={i}>
+        {exercise.links.map((l) => (
+          <span className="pill" key={l.id}>
             {l.relationshipType}: {l.exercise.name}
+            <button onClick={() => remove(l.id)}>x</button>
           </span>
         ))}
       </div>
-      <p className="muted">
-        Para quitar un enlace, edita el ejercicio de destino (esta vista solo permite anadir por
-        ahora).
-      </p>
       <div className="row">
         <select value={selected} onChange={(e) => setSelected(e.target.value)}>
           <option value="">Elegir ejercicio...</option>
@@ -539,14 +547,26 @@ function SportTransfersSection({
     }
   }
 
+  async function remove(transferId: string) {
+    try {
+      await deleteSportTransfer(transferId);
+      await reload(exerciseId, onChange);
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
   return (
     <div className="card">
       <strong>Transferencia al deporte</strong>
       {error && <p className="error">{error}</p>}
       <ul>
-        {exercise.sportTransfers.map((t, i) => (
-          <li key={i}>
-            <strong>{t.sportName}</strong> ({t.evidenceRating}): {t.description}
+        {exercise.sportTransfers.map((t) => (
+          <li key={t.id}>
+            <strong>{t.sportName}</strong> ({t.evidenceRating}): {t.description}{" "}
+            <button className="danger" onClick={() => remove(t.id)} style={{ marginLeft: 6 }}>
+              Eliminar
+            </button>
           </li>
         ))}
       </ul>

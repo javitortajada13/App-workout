@@ -47,6 +47,7 @@ export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | n
       required: eq.required,
     })),
     links: exercise.linksFrom.map((l) => ({
+      id: l.id,
       relationshipType: l.relationshipType,
       rationale: l.rationale,
       exercise: {
@@ -57,6 +58,7 @@ export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | n
       },
     })),
     sportTransfers: exercise.sportTransfers.map((st) => ({
+      id: st.id,
       sportName: st.sport.name,
       description: st.description,
       evidenceRating: st.evidenceRating,

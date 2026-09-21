@@ -10,7 +10,12 @@ import {
   deleteSession,
   fetchExerciseList,
   fetchProgram,
+  updateBlock,
+  updateBlockExercise,
+  updateProgram,
+  updateSession,
   type BlockAdmin,
+  type BlockExerciseAdmin,
   type ExerciseListItem,
   type ProgramAdmin,
   type SessionAdmin,
@@ -60,6 +65,8 @@ export default function ProgramEditor() {
         {new Date(program.endDate).toLocaleDateString()}
       </p>
 
+      <ProgramHeaderEditor program={program} onSaved={reload} />
+
       {program.sessions
         .slice()
         .sort((a, b) => a.order - b.order)
@@ -68,6 +75,88 @@ export default function ProgramEditor() {
         ))}
 
       <AddSessionForm programId={program.id} onAdded={reload} />
+    </div>
+  );
+}
+
+function toDateInputValue(iso: string) {
+  return iso.slice(0, 10);
+}
+
+function ProgramHeaderEditor({
+  program,
+  onSaved,
+}: {
+  program: ProgramAdmin;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(program.name);
+  const [startDate, setStartDate] = useState(toDateInputValue(program.startDate));
+  const [endDate, setEndDate] = useState(toDateInputValue(program.endDate));
+  const [coachNote, setCoachNote] = useState(program.coachNote ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  if (!editing) {
+    return (
+      <div style={{ marginBottom: 16 }}>
+        {program.coachNote && <p className="muted">{program.coachNote}</p>}
+        <button className="secondary" onClick={() => setEditing(true)}>
+          Editar programa
+        </button>
+      </div>
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateProgram(program.id, {
+        name: name.trim(),
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        coachNote: coachNote.trim() || null,
+      });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      {error && <p className="error">{error}</p>}
+      <div className="field">
+        <label>Nombre</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="row">
+        <div className="field">
+          <label>Inicio</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Fin</label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </div>
+      </div>
+      <div className="field">
+        <label>Nota del entrenador</label>
+        <textarea value={coachNote} onChange={(e) => setCoachNote(e.target.value)} rows={2} />
+      </div>
+      <div className="row">
+        <button className="primary" onClick={save} disabled={saving}>
+          Guardar
+        </button>
+        <button className="secondary" onClick={() => setEditing(false)}>
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }
@@ -131,6 +220,10 @@ function SessionCard({
   onChange: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(session.label);
+  const [order, setOrder] = useState(session.order);
+  const [role, setRole] = useState(session.role);
 
   async function remove() {
     if (!confirm(`Eliminar la sesion "${session.label}" y todo su contenido?`)) return;
@@ -142,15 +235,57 @@ function SessionCard({
     }
   }
 
+  async function save() {
+    try {
+      await updateSession(session.id, { label: label.trim(), order, role });
+      setEditing(false);
+      onChange();
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <strong>
-          {session.order}. {session.label} <span className="muted">({session.role})</span>
-        </strong>
-        <button className="danger" onClick={remove}>
-          Eliminar sesion
-        </button>
+        {editing ? (
+          <div className="row">
+            <input value={label} onChange={(e) => setLabel(e.target.value)} style={{ width: 140 }} />
+            <input
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(Number(e.target.value))}
+              style={{ width: 60 }}
+            />
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              {SESSION_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <button className="secondary" onClick={save}>
+              Guardar
+            </button>
+            <button className="secondary" onClick={() => setEditing(false)}>
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <strong>
+            {session.order}. {session.label} <span className="muted">({session.role})</span>
+          </strong>
+        )}
+        <div className="row">
+          {!editing && (
+            <button className="secondary" onClick={() => setEditing(true)}>
+              Editar
+            </button>
+          )}
+          <button className="danger" onClick={remove}>
+            Eliminar sesion
+          </button>
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
 
@@ -221,6 +356,10 @@ function BlockCard({
   onChange: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [order, setOrder] = useState(block.order);
+  const [blockType, setBlockType] = useState(block.blockType);
+  const [purpose, setPurpose] = useState(block.purpose ?? "");
 
   async function remove() {
     if (!confirm("Eliminar este bloque y sus ejercicios?")) return;
@@ -232,15 +371,61 @@ function BlockCard({
     }
   }
 
+  async function save() {
+    try {
+      await updateBlock(block.id, { order, blockType, purpose: purpose.trim() || null });
+      setEditing(false);
+      onChange();
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
   return (
     <div className="card" style={{ background: "#fafafa" }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <span>
-          Bloque {block.order} ({block.blockType}){block.purpose ? ` — ${block.purpose}` : ""}
-        </span>
-        <button className="danger" onClick={remove}>
-          Eliminar bloque
-        </button>
+        {editing ? (
+          <div className="row">
+            <input
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(Number(e.target.value))}
+              style={{ width: 50 }}
+            />
+            <select value={blockType} onChange={(e) => setBlockType(e.target.value)}>
+              {BLOCK_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="Proposito"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+            />
+            <button className="secondary" onClick={save}>
+              Guardar
+            </button>
+            <button className="secondary" onClick={() => setEditing(false)}>
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <span>
+            Bloque {block.order} ({block.blockType}){block.purpose ? ` — ${block.purpose}` : ""}
+          </span>
+        )}
+        <div className="row">
+          {!editing && (
+            <button className="secondary" onClick={() => setEditing(true)}>
+              Editar
+            </button>
+          )}
+          <button className="danger" onClick={remove}>
+            Eliminar bloque
+          </button>
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
 
@@ -259,35 +444,126 @@ function BlockCard({
             .slice()
             .sort((a, b) => a.order - b.order)
             .map((be) => (
-              <tr key={be.id}>
-                <td>{be.order}</td>
-                <td>{be.exercise.name}</td>
-                <td>
-                  {be.repsOrDuration} ({be.prescriptionType})
-                </td>
-                <td>{be.sets ?? "-"}</td>
-                <td>
-                  <button
-                    className="danger"
-                    onClick={async () => {
-                      try {
-                        await deleteBlockExercise(be.id);
-                        onChange();
-                      } catch (err) {
-                        setError(describeError(err));
-                      }
-                    }}
-                  >
-                    x
-                  </button>
-                </td>
-              </tr>
+              <BlockExerciseRow key={be.id} blockExercise={be} onChange={onChange} />
             ))}
         </tbody>
       </table>
 
       <AddBlockExerciseForm blockId={block.id} exercises={exercises} onAdded={onChange} />
     </div>
+  );
+}
+
+function BlockExerciseRow({
+  blockExercise,
+  onChange,
+}: {
+  blockExercise: BlockExerciseAdmin;
+  onChange: () => void;
+}) {
+  const be = blockExercise;
+  const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [order, setOrder] = useState(be.order);
+  const [prescriptionType, setPrescriptionType] = useState(be.prescriptionType);
+  const [repsOrDuration, setRepsOrDuration] = useState(be.repsOrDuration);
+  const [sets, setSets] = useState(be.sets?.toString() ?? "");
+  const [load, setLoad] = useState(be.load ?? "");
+  const [rest, setRest] = useState(be.rest ?? "");
+
+  async function remove() {
+    try {
+      await deleteBlockExercise(be.id);
+      onChange();
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
+  async function save() {
+    try {
+      await updateBlockExercise(be.id, {
+        order,
+        prescriptionType,
+        repsOrDuration: repsOrDuration.trim(),
+        sets: sets ? Number(sets) : null,
+        load: load.trim() || null,
+        rest: rest.trim() || null,
+      });
+      setEditing(false);
+      onChange();
+    } catch (err) {
+      setError(describeError(err));
+    }
+  }
+
+  if (editing) {
+    return (
+      <tr>
+        <td colSpan={5}>
+          {error && <p className="error">{error}</p>}
+          <div className="row">
+            <input
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(Number(e.target.value))}
+              style={{ width: 50 }}
+            />
+            <select value={prescriptionType} onChange={(e) => setPrescriptionType(e.target.value)}>
+              {PRESCRIPTION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="ej. 10, 30s"
+              value={repsOrDuration}
+              onChange={(e) => setRepsOrDuration(e.target.value)}
+              style={{ width: 90 }}
+            />
+            <input
+              placeholder="series"
+              value={sets}
+              onChange={(e) => setSets(e.target.value)}
+              style={{ width: 60 }}
+            />
+            <input placeholder="carga" value={load} onChange={(e) => setLoad(e.target.value)} style={{ width: 80 }} />
+            <input placeholder="descanso" value={rest} onChange={(e) => setRest(e.target.value)} style={{ width: 80 }} />
+            <button className="secondary" onClick={save}>
+              Guardar
+            </button>
+            <button className="secondary" onClick={() => setEditing(false)}>
+              Cancelar
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr>
+      <td>{be.order}</td>
+      <td>{be.exercise.name}</td>
+      <td>
+        {be.repsOrDuration} ({be.prescriptionType})
+        {be.load ? ` · ${be.load}` : ""}
+        {be.rest ? ` · descanso ${be.rest}` : ""}
+      </td>
+      <td>{be.sets ?? "-"}</td>
+      <td>
+        <div className="row">
+          <button className="secondary" onClick={() => setEditing(true)}>
+            Editar
+          </button>
+          <button className="danger" onClick={remove}>
+            x
+          </button>
+        </div>
+        {error && <p className="error">{error}</p>}
+      </td>
+    </tr>
   );
 }
 

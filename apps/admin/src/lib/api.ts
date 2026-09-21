@@ -61,11 +61,17 @@ export interface ExerciseDetailAdmin {
   muscles: { id: string; name: string; muscleGroup: string | null; emphasis: string }[];
   equipment: { id: string; name: string; required: boolean }[];
   links: {
+    id: string;
     relationshipType: string;
     rationale: string | null;
     exercise: { id: string; name: string };
   }[];
-  sportTransfers: { sportName: string; description: string; evidenceRating: string }[];
+  sportTransfers: {
+    id: string;
+    sportName: string;
+    description: string;
+    evidenceRating: string;
+  }[];
 }
 
 export interface ProgramAdmin {
