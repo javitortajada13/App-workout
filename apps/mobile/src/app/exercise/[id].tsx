@@ -97,8 +97,21 @@ export default function ExerciseScreen() {
         <ThemedText type="title">{exercise.name}</ThemedText>
 
         {Platform.OS === "web" && videoId ? (
-          <ThemedView style={styles.videoEmbed}>
-            <YoutubeEmbedWeb videoId={videoId} title={exercise.name} />
+          <ThemedView style={styles.videoBlock}>
+            <ThemedView style={styles.videoEmbed}>
+              <YoutubeEmbedWeb videoId={videoId} title={exercise.name} />
+            </ThemedView>
+            {/* YouTube sometimes shows a "sign in to confirm you're not a bot"
+                overlay inside the embed depending on the viewer's network/device
+                -- our code can't detect or bypass that (the iframe's content is
+                cross-origin, invisible to us), so this fallback link is always
+                shown rather than conditionally, giving a guaranteed way to watch
+                the video without asking anyone to change device settings. */}
+            <Pressable onPress={() => Linking.openURL(exercise.videoUrl!)}>
+              <ThemedText type="small" style={{ color: theme.accent, textAlign: "center" }}>
+                No carga el video? Abrelo aqui
+              </ThemedText>
+            </Pressable>
           </ThemedView>
         ) : (
           exercise.videoUrl && (
@@ -236,6 +249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
   },
+  videoBlock: { gap: Spacing.two },
   videoEmbed: {
     width: "100%",
     aspectRatio: 16 / 9,
