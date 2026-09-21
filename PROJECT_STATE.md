@@ -1560,6 +1560,35 @@ external "Ver video" link.
   one needs the user's own eyes in the real deployed app before being
   called fully done.
 
+### Videos backfilled for the remaining padel exercises (2026-09-21)
+
+The user asked to fill in `videoUrl` for the padel S&C exercises that
+never had one (the original seed, per `CLAUDE.md`'s "Current state,
+honestly" -- these predate the father's program work and were never
+populated). Searched real YouTube videos for all 17 via `WebSearch`
+(same approach as the gym exercises earlier), then built
+`/tmp/.../scratchpad/add-videos-remaining-exercises.sql` -- `UPDATE
+"Exercise" SET "videoUrl" = ...` per row, idempotent, touches no other
+field. Verified locally (transaction + rollback): all 12 applied
+cleanly.
+
+**Found good-to-partial matches for 12 of 17** -- several of these are
+the closest real video for the general movement, not confirmed to show
+the exact variant named in the exercise (e.g. "Hang Staggered Muscle
+Snatch" links to a standard-stance hang muscle snatch, not the staggered
+variant; each partial match is commented in the SQL file itself with
+what it doesn't confirm). **Left 5 without a video, on purpose**: their
+names describe specific multi-movement combinations (e.g. "Deadbug +
+Aduccion + Glute Bridge con Banda de Cadera", "Hip Turn + Drop Step")
+that no real video search turned up a confident single match for --
+per this project's core rule, a wrong-but-plausible link is worse than
+no link. Still open: `Deadbug + Aduccion + Glute Bridge con Banda de
+Cadera`, `Deadbug to Lateral Plank con KTB`, `Drop Horizontal Switch
+Jump`, `Hip Turn + Drop Step`, `Landmine Halfmoon Press` (this last one
+specifically because it's unclear whether "half moon" and "half
+kneeling" landmine press are the same movement or not -- didn't want to
+guess).
+
 ---
 
 ## References
