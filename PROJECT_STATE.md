@@ -1788,6 +1788,18 @@ after three rounds of debugging a "bug" that was actually "this was
 never a real method." Search-engine summaries of gists/blog posts are
 not the same as confirmed API surface.
 
+**Fully closed**: the user pushed back with a real counter-observation
+(it looked like it worked on their iPad) before accepting this. Rather
+than dismiss it, proposed the decisive test -- open the same video in a
+fresh private/incognito tab on the iPad (no saved cookies) -- since
+YouTube is known to remember a manually-picked audio track per browser.
+Confirmed: private tab -> English, normal tab -> Spanish. The iPad
+"working" was the browser remembering a manual gear-icon selection made
+at some point during testing, on that specific browser profile --
+nothing to do with this code, on either device. No remaining ambiguity.
+Final state: plain iframe, viewer picks the language by hand the first
+time per device/browser, exactly like using youtube.com directly.
+
 ---
 
 ## References
