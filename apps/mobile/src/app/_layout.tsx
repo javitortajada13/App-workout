@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/hooks/use-theme";
+import { fetchMe } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 // `undefined` = still checking for a stored session, `null` = confirmed
@@ -35,6 +36,17 @@ export default function RootLayout() {
     });
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  // Ensures the app-side Profile row exists as soon as there's a session
+  // -- see fetchMe's own comment for why this call has to happen
+  // somewhere. Errors are swallowed: this is a background sync, not
+  // something that should block or break navigation if the API is
+  // briefly unreachable.
+  useEffect(() => {
+    if (session) {
+      fetchMe().catch((error) => console.error("Failed to sync profile", error));
+    }
+  }, [session]);
 
   if (session === undefined) {
     return (

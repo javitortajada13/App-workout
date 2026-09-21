@@ -30,6 +30,15 @@ export function fetchPrograms() {
   return get<ProgramSummary[]>("/programs");
 }
 
+// Called once per session after login purely for its side effect: hitting
+// any authenticated route makes the API auto-provision this user's
+// Profile row (see apps/api/src/auth.ts). Without this, nothing in the
+// app ever called an authenticated endpoint -- /programs works logged
+// out too -- so a real login never actually created a Profile.
+export function fetchMe() {
+  return get<{ id: string; email: string; role: "coach" | "athlete" }>("/me");
+}
+
 export function fetchProgram(id: string) {
   return get<ProgramDetail>(`/programs/${id}`);
 }
