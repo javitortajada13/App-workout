@@ -1703,6 +1703,28 @@ tracking cookies that trigger the check in the first place. Verified
 by the user on the real device** -- next check-in should ask whether the
 video plays now without the bot-check prompt.
 
+### Bot-check on embed: device-dependent, not fixed by nocookie alone (2026-09-21, cont.)
+
+The `youtube-nocookie.com` fix (previous entry) did not resolve it --
+user still hit "sign in to confirm you're not a bot" on their phone.
+Useful new data point: **works fine on their iPad, fails on their
+phone**, same app, same Safari -- points to something network/device-
+specific (mobile data IP reputation, Private Relay, or Safari's web
+login state on that device) rather than a structural iframe problem,
+though not yet confirmed which. Asked the user two quick diagnostic
+questions (WiFi vs. mobile data; whether Safari on the phone is actually
+logged into youtube.com directly) -- answer not yet in.
+
+Regardless of root cause, added a permanent safety net:
+`exercise/[id].tsx` now always shows a small "No carga el video? Abrelo
+aqui" link under the embed, opening the real YouTube page directly. This
+was the practical answer to "don't make my dad fiddle with settings" --
+we cannot detect the bot-check from our code (the iframe's content is
+cross-origin/invisible to the parent page, a real browser security
+boundary, not a gap in this implementation), so an always-available,
+zero-troubleshooting fallback is the right permanent fix regardless of
+what's actually causing it on the user's phone.
+
 ---
 
 ## References
