@@ -1725,6 +1725,15 @@ boundary, not a gap in this implementation), so an always-available,
 zero-troubleshooting fallback is the right permanent fix regardless of
 what's actually causing it on the user's phone.
 
+**Root cause confirmed, closed**: the user had a VPN active on their
+phone (not on the iPad) -- VPN/datacenter IPs are exactly what YouTube's
+bot detection flags most often. Turned the VPN off, works fine. Not an
+app bug at all, and not expected to affect the father (no VPN). The
+`youtube-nocookie.com` switch and the always-visible fallback link both
+stay -- genuinely useful regardless, cost nothing, and the fallback
+covers any future case (public wifi, a captive portal, etc.) without
+needing to re-diagnose from scratch.
+
 ---
 
 ## References
