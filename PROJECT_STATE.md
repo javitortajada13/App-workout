@@ -1657,6 +1657,32 @@ next time this pattern comes up:
   API player, not a raw navigation) rather than switching to a worse
   video match. Worth checking if it actually plays once this is live.
 
+### Bug: video UPDATE scripts used local dev ids, silently no-op'd in prod (2026-09-21)
+
+Both video-backfill scripts (the 12-exercise one and the 5-combo one)
+used `WHERE id = '<cuid>'` with ids read from **this sandbox's local
+dev Postgres**, not production. Local dev and production Supabase were
+seeded independently, so `Exercise.id` values differ between them even
+for the same-named row -- this exact gotcha is already documented
+earlier in this file (see the M3/M4-era taxonomy-lookup note) and I
+still made the mistake here for `Exercise` rows specifically. The
+`UPDATE`s ran without error and silently affected 0 rows each time,
+which is worse than an error -- nothing looked wrong until the user
+actually checked the admin app and none of the videos showed up.
+
+**Fix applied and confirmed working**: rewrote both scripts to
+`WHERE name = '...'` instead (`Exercise.name` is `@unique`, identical
+across both databases) -- combined into one script, re-run by the user,
+confirmed via the same verification query (0 rows without a video).
+
+**Lesson, to actually stick this time**: any SQL written for the user to
+run against production must resolve every reference to an *existing* row
+(not one being inserted in the same script) by a unique, human-readable
+column (`name`), never a raw id pulled from local dev -- not just for
+taxonomy tables, for every table. Only ids for rows *created in the same
+script* are safe to hardcode, because they're deterministic strings
+chosen there (like the `gym-*` exercise ids), not database-generated.
+
 ---
 
 ## References
