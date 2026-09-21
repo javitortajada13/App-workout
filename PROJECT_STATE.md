@@ -28,6 +28,25 @@ the References section at the end.
 This document does not change, resolve, or reinterpret anything below. Where
 sources conflict, both sides are given.
 
+**Read this before anything else — this is a real business, not just a
+family project.** The user runs "Padel Performance," a paid physical-
+preparation coaching service for padel players (amateur/intermediate/
+competitive, often with recurring injuries): €120/month, currently
+delivered through a third-party app (**TIMP**, not this platform),
+updated every 2 weeks, with direct support, paid via Wise. Client
+acquisition funnel: an Instagram-bio link to a custom-built assessment
+form (`padelperformance.tiiny.site` -- 6 steps: basic info, padel
+profile, injuries/limitations with conditional logic, sports/training
+history, lifestyle/recovery, training environment; submits to Google
+Forms -> Google Sheets), then semi-personalized WhatsApp templates
+(English/Spanish) for first contact and post-payment (the post-payment
+one requests 6 movement-assessment videos + gym photos). The user's own
+father is the first real test athlete on *this* app specifically, not
+the business's only client -- see the M2-onward log in section 13 for
+the full build. Full detail on how this connects to the app (or
+deliberately doesn't yet) is in the dated log entry near the end of
+section 13.
+
 ---
 
 ## 1. Original product vision and philosophy
@@ -1370,6 +1389,46 @@ combination seen in the videos). Two-session program structure (which
 exercises pair into which blocks) is the next step, still pending the
 user's confirmation on a couple of ambiguous block pairings from the
 videos, and now also pending them filling in the father's `coachNotes`.
+
+### Real business context revealed (2026-09-21)
+
+While asking how to connect his client-intake form to `coachNotes`, the
+user described the actual business this app is meant to eventually
+serve -- summarized at the very top of this document (read that first).
+Key points not to lose:
+
+- **"Padel Performance"** is a real, currently-operating paid coaching
+  service (€120/month), not a hypothetical. It is delivered today
+  through **TIMP**, a third-party app -- this project (`App Workout`) is
+  not yet what clients actually use; the father is the first real
+  athlete on *this* platform specifically.
+- Client acquisition already has a full funnel outside this codebase:
+  Instagram bio -> a custom HTML assessment form the user built himself
+  (`padelperformance.tiiny.site`, described as "diseno premium: fondo
+  verde oscuro, tipografia Bebas Neue, acento lima, lineas de pista de
+  padel, estilo editorial" -- a real, considered brand identity that
+  exists nowhere in this app yet) -> Google Forms -> Google Sheets ->
+  WhatsApp templates (EN/ES) for first contact and post-payment
+  (requesting 6 movement-assessment videos + gym photos) -> payment via
+  Wise.
+- **Decision on connecting the form**: no Google Sheets API integration
+  for now (real added complexity -- OAuth/service account credentials --
+  for a client volume that doesn't yet justify it). Instead: the user
+  shares each new client's form response with the coach (in a Claude
+  Code conversation, same as this session's whole workflow) when it's
+  time to build their program, and it gets summarized into that
+  athlete's `coachNotes`. Revisit if client volume grows enough that
+  manual handoff becomes the bottleneck.
+- **Not yet reconciled, worth surfacing next time it comes up**: this
+  app's visual identity (the teal/warm-off-white palette applied earlier
+  this session, pulled from an old design-preview artifact) has no
+  relationship to the real "Padel Performance" brand identity (dark
+  green canvas, Bebas Neue, lime accent, court-line motifs) the user
+  already built for the assessment form and Instagram presence. If this
+  app is ever meant to be client-facing under that brand, the visual
+  identity question from earlier today gets a different answer than "use
+  the old mockup's palette" -- flagging this now rather than silently
+  picking one.
 
 ---
 
