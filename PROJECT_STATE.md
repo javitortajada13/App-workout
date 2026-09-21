@@ -1615,6 +1615,48 @@ switch needed. The `getAvailableAudioTracks`/`setAudioTrack` approach
 works in practice, at least on Safari/iPadOS against a real dubbed
 video -- worth knowing next time this pattern is questioned.
 
+### Mov Prep (shared warmup block) added to father's program (2026-09-21)
+
+Closed the loop on the "Mov Prep" idea from earlier: the data model
+already supported this (`SessionRole.warmup`, see schema.prisma comment),
+and the seed's own `Mov Prep` session (zero blocks, never filled in from
+screenshots) was the precedent. Built it for real this time.
+
+Went through several rounds of miscommunication worth remembering for
+next time this pattern comes up:
+- I initially proposed 3 generic warmup exercises (marching, hip circles,
+  shoulder rotations) from my own reasoning, without ever having seen the
+  user's real Mov Prep screenshot -- the user asked me to search videos
+  for those before I'd actually seen source material, which in hindsight
+  I should have asked for up front rather than inventing a plausible
+  warmup structure first.
+- When the user finally sent the real screenshot, the actual block was
+  completely different from what I'd guessed: **Aduccion de cadera con
+  banda (tumbado boca arriba)**, **Aduccion desde extension de cadera**,
+  and **Inverted Nordic Curl** -- none of which I had proposed.
+- The user then simplified further in conversation: dropped the second
+  exercise (redundant with the first, no confident video match anyway)
+  and the Inverted Nordic Curl, and asked to bring back 2 of my original
+  generic proposals (marcha en el sitio, rotaciones de hombro con banda)
+  to fill the block back out to 3.
+- **Final block, confirmed and applied**: Aduccion de cadera con banda
+  tumbado boca arriba (`gym-supine-band-hip-adduction`) + Marcha en el
+  sitio (`gym-marching-in-place`) + Rotaciones de hombro con banda ligera
+  (`gym-standing-band-shoulder-circles`). SQL:
+  `/tmp/.../scratchpad/add-mov-prep.sql`, pasted inline for the user
+  (file attachments didn't work for them earlier in this session) rather
+  than sent via SendUserFile. Verified locally (transaction + rollback):
+  new `Session` (`role: warmup`, `order: 0`, before Dia 1/Dia 2's 1/2) +
+  one `circuit` `Block` with `rounds: 2` + 3 `BlockExercise` rows, all
+  correct.
+- One open item the user is checking themselves: the first video
+  (`Wm51OxLX3dI`, "H1 | Hip Adduction - Supine (Band)") gave the user an
+  access error ("use a computer or phone") when opened as a raw link on
+  their iPad -- kept it anyway per the user's own theory that it might
+  work once actually embedded in-app (goes through the YouTube IFrame
+  API player, not a raw navigation) rather than switching to a worse
+  video match. Worth checking if it actually plays once this is live.
+
 ---
 
 ## References
