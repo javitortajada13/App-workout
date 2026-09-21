@@ -76,6 +76,13 @@ model Profile {
   // Deliberately a plain field, no structure or adaptive logic behind it yet
   // -- see PROJECT_STATE.md section 13.
   athleteLevel String?
+  // Coach-only free text: medical history, functional test notes, sport(s),
+  // load-progression philosophy for this athlete. Never shown to the
+  // athlete themselves -- read by the coach (or whoever is building this
+  // athlete's program, including a human reasoning over it in a Claude Code
+  // session) before creating or adjusting a program. Deliberately unstructured
+  // for the same reason athleteLevel is: no adaptive logic reads this yet.
+  coachNotes   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

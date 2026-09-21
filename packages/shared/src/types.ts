@@ -134,6 +134,7 @@ export interface AthleteSummary {
   email: string;
   name: string | null;
   athleteLevel: string | null;
+  coachNotes: string | null;
   activeProgram: { id: string; name: string } | null;
 }
 

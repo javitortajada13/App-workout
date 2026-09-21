@@ -164,6 +164,10 @@ export function fetchMe() {
 export const fetchAthletes = () => get<AthleteSummary[]>("/athletes");
 export const assignProgram = (athleteId: string, programId: string) =>
   post(`/athletes/${athleteId}/assign-program`, { programId });
+export const updateAthlete = (
+  athleteId: string,
+  body: Partial<{ name: string | null; athleteLevel: string | null; coachNotes: string | null }>,
+) => patch<AthleteSummary>(`/athletes/${athleteId}`, body);
 
 // --- Coach's own program list (also used to pick an unassigned program) ---
 export const fetchMyPrograms = () => get<MyProgramSummary[]>("/me/programs");

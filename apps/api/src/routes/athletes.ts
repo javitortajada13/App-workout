@@ -7,7 +7,7 @@
 import type { AthleteSummary } from "@app-workout/shared";
 import type { FastifyInstance } from "fastify";
 import { authenticate, requireCoach } from "../auth.js";
-import { prisma } from "../db.js";
+import { isRecordNotFoundError, prisma } from "../db.js";
 
 export function registerAthleteRoutes(app: FastifyInstance) {
   app.get(
@@ -30,10 +30,35 @@ export function registerAthleteRoutes(app: FastifyInstance) {
         email: a.email,
         name: a.name,
         athleteLevel: a.athleteLevel,
+        coachNotes: a.coachNotes,
         activeProgram: a.programsAsAthlete[0] ?? null,
       }));
     },
   );
+
+  // Coach-only notes about this athlete (medical history, functional test
+  // results, sport(s), load-progression philosophy) -- read before building
+  // or adjusting their program, never shown to the athlete themselves.
+  app.patch<{
+    Params: { id: string };
+    Body: { name?: string | null; athleteLevel?: string | null; coachNotes?: string | null };
+  }>("/athletes/:id", { onRequest: [authenticate, requireCoach] }, async (req, reply) => {
+    const body = req.body ?? {};
+    try {
+      const updated = await prisma.profile.update({
+        where: { id: req.params.id },
+        data: {
+          ...(body.name !== undefined && { name: body.name }),
+          ...(body.athleteLevel !== undefined && { athleteLevel: body.athleteLevel }),
+          ...(body.coachNotes !== undefined && { coachNotes: body.coachNotes }),
+        },
+      });
+      return updated;
+    } catch (err) {
+      if (isRecordNotFoundError(err)) return reply.code(404).send({ error: "Athlete not found" });
+      throw err;
+    }
+  });
 
   // Assigns an existing program to an athlete. If that athlete already has
   // a different active program, it's archived rather than deleted or

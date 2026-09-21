@@ -1311,6 +1311,66 @@ not a code change, and wasn't attempted. The admin app (`apps/admin`)
 was left untouched in this pass; the user's complaint was specifically
 about the athlete-facing mobile/web screens.
 
+### AI-program-generation decision + coachNotes field (2026-09-21)
+
+User asked about building a per-client "GPT" for AI-generated routines,
+and separately revealed serious medical context for the father (survived
+sudden cardiac death at 53, triple bypass, ICD/DAI, right hip
+replacement) while describing what his real trainer had prescribed.
+
+**Decision on the AI-generation architecture**: no separate paid-API
+feature, no per-client "GPT". Instead: the user gives the athlete's
+context (parameters, trainer notes, medical history) directly in a
+Claude Code conversation like this one, and programs get built through
+the existing write API/SQL, same as this session's whole M2-M6 build.
+This is free (no separate Anthropic API billing) and was the user's own
+proposed alternative once the per-generation cost of a real in-app AI
+feature was explained. Revisit only if this becomes a product other
+coaches use self-serve, without a Claude Code session available to them.
+
+**Safety note, stated plainly to the user and worth repeating here**:
+exercise selection can avoid obvious contraindications (no maximal
+effort, no heavy Valsalva, hip-precaution awareness), but intensity/
+progression decisions for someone with this cardiac history are not
+something an AI assistant should be driving -- that stays with the
+athlete's cardiologist and the real trainer who has assessed him in
+person. Any program built for this athlete should stay conservative and
+defer to that guidance, not push based on what "looks fine" in a chat.
+
+**Added `Profile.coachNotes`** (`apps/api/prisma/schema.prisma`,
+migration `20260921081053_add_coach_notes`): a coach-only free-text
+field -- medical history, sport(s), functional test notes, load-
+progression philosophy -- meant to be filled in once per athlete and
+read before building or adjusting their program (by a human/Claude Code
+session today; possibly by an automated tool later). Never shown to the
+athlete. Exposed via `PATCH /athletes/:id` (coach-only; also accepts
+`name`/`athleteLevel`) and a textarea on each athlete's card in
+`apps/admin/src/pages/Athletes.tsx`. `AthleteSummary` (shared types)
+now carries `coachNotes`. Verified: typecheck across every workspace,
+API build, admin `vite build`, and the migration applied cleanly
+against local dev Postgres with no drift.
+
+**Also added this session, pending the user running it in Supabase**:
+a SQL script (given directly to the user, not committed to the repo)
+adding 10 general gym exercises to the Exercise library -- 8 identified
+from the user's own videos of his parents training (band hip abduction,
+band glute kickback, lateral band walk, supported split squat, box
+hamstring/hip mobility, standing toe-touch stretch, seated dumbbell
+side bend, loaded rotational carry with a medicine ball) plus 2
+recommended machine exercises to cover the upper-body push/pull the
+videos didn't show (chest press machine, lat pulldown). Each exercise's
+content (objective/coachingCues/contraindications) and a demonstration
+video URL were verified: the SQL was run successfully against local dev
+Postgres first (all 10 rows inserted, all muscle/equipment/quality
+relationships resolved correctly, confirmed via a follow-up query) then
+rolled back before handing the (identical) script to the user for
+Supabase. One exercise's video URL is flagged in its own coaching cues
+as an imperfect match (couldn't find a video of the exact walk+rotate
+combination seen in the videos). Two-session program structure (which
+exercises pair into which blocks) is the next step, still pending the
+user's confirmation on a couple of ambiguous block pairings from the
+videos, and now also pending them filling in the father's `coachNotes`.
+
 ---
 
 ## References

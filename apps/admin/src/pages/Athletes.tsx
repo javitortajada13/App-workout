@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AthleteSummary, MyProgramSummary } from "@app-workout/shared";
-import { assignProgram, fetchAthletes, fetchMyPrograms } from "@/lib/api";
+import { assignProgram, fetchAthletes, fetchMyPrograms, updateAthlete } from "@/lib/api";
 
 export default function Athletes() {
   const [athletes, setAthletes] = useState<AthleteSummary[] | null>(null);
@@ -80,8 +80,46 @@ export default function Athletes() {
               Asignar
             </button>
           </div>
+
+          <CoachNotes athlete={athlete} onSaved={reload} />
         </div>
       ))}
+    </div>
+  );
+}
+
+function CoachNotes({ athlete, onSaved }: { athlete: AthleteSummary; onSaved: () => void }) {
+  const [notes, setNotes] = useState(athlete.coachNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dirty = notes !== (athlete.coachNotes ?? "");
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateAthlete(athlete.id, { coachNotes: notes || null });
+      onSaved();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div className="field">
+        <label>
+          Notas del entrenador (historial medico, deporte(s), test funcional, progresion --
+          solo tu la ves, el atleta no)
+        </label>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
+      </div>
+      {error && <p className="error">{error}</p>}
+      <button className="secondary" onClick={save} disabled={saving || !dirty}>
+        {saving ? "Guardando..." : "Guardar notas"}
+      </button>
     </div>
   );
 }
