@@ -1734,6 +1734,20 @@ stay -- genuinely useful regardless, cost nothing, and the fallback
 covers any future case (public wifi, a captive portal, etc.) without
 needing to re-diagnose from scratch.
 
+### Reverted youtube-nocookie.com: it broke the Spanish dub (2026-09-21, cont.)
+
+After the VPN root cause above, the user reported the Spanish
+auto-selection had stopped working (it worked before the nocookie
+change). Reverted `host: "https://www.youtube-nocookie.com"` back to
+the default host in `youtube-embed-web.tsx` -- most likely explanation:
+privacy-enhanced mode withholds the personalization data multi-language
+audio tracks depend on. Not independently confirmed against YouTube's
+own docs (still unreachable from this sandbox), but the timeline (worked
+-> nocookie added -> broke -> nocookie removed) is strong enough
+circumstantial evidence to act on. The always-visible fallback link
+added earlier stays regardless -- it's what actually protects against a
+real embed failure now, not the host domain.
+
 ---
 
 ## References
