@@ -450,10 +450,16 @@ decision above:
   the one deploy-ordering issue hit along the way (blank screen on first
   load, fixed by rebuilding after env vars were in place -- not a code
   bug).
-- M6–M7 as previously scoped (video playback + nav on mobile, polish) —
-  unchanged by this decision round, see the implementation-plan
-  discussion in this conversation for details; not yet transcribed here
-  in full.
+- **M6 — started, not complete.** First small piece done: the mobile
+  exercise detail screen now shows a "Ver video" button when
+  `exercise.videoUrl` is set (see the M6 log below). This was premature
+  before M5 existed (nothing could set a video URL), but the admin app's
+  exercise editor now has a "URL de video" field, so the two connect.
+  Full nav polish (the screenshot-flow navigation target from the V1
+  decisions) is still not done.
+- M7 as previously scoped (polish) — unchanged by this decision round,
+  see the implementation-plan discussion in this conversation for
+  details; not yet transcribed here in full.
 
 ### M1 implementation log
 
@@ -1192,6 +1198,26 @@ After that: **confirmed working end-to-end at
 `javiertortajada10@gmail.com` with "julio y el resto" as the active
 program and a working reassignment control. M5 is no longer just
 locally-verified; it's live and used by a real person.
+
+### M6 log (started)
+
+**2026-09-21** — with M5 confirmed live and the user still exploring it,
+noticed the mobile exercise detail screen (`apps/mobile/src/app/exercise/
+[id].tsx`) never showed `exercise.videoUrl` at all, even though the field
+has existed on `Exercise` since the original schema and the admin editor
+now has a "URL de video" input to actually set it. Added a simple "Ver
+video" button (`Linking.openURL`, opens externally) shown only when a
+video URL is set -- deliberately not an embedded player, since that would
+need to handle whatever video hosting ends up being used (YouTube link
+vs. a direct file vs. something else), which isn't decided yet. Verified:
+typecheck passes, and `npx expo export -p web` still builds
+`/exercise/[id]` cleanly with the new `Linking` import. Not yet tested on
+a real device or with a real video URL, since none has been added yet.
+
+This is a small, safe first M6 step, not the milestone -- full nav polish
+(the screenshot-flow target from the V1 decisions:
+`Profile -> Training -> Program -> Day/Session -> inline Blocks ->
+Exercise detail`) is unstarted.
 
 ---
 

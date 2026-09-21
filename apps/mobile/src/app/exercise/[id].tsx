@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ExerciseDetail } from "@app-workout/shared";
@@ -98,6 +98,20 @@ export default function ExerciseScreen() {
         <Section title="Por que">
           <ThemedText>{exercise.objective}</ThemedText>
         </Section>
+
+        {exercise.videoUrl && (
+          <Pressable
+            onPress={() => Linking.openURL(exercise.videoUrl!)}
+            style={({ pressed }) => [
+              styles.videoButton,
+              { backgroundColor: theme.text, opacity: pressed ? 0.8 : 1 },
+            ]}
+          >
+            <ThemedText style={{ color: theme.background }} type="smallBold">
+              Ver video
+            </ThemedText>
+          </Pressable>
+        )}
 
         {exercise.physicalQualities.length > 0 && (
           <Section title="Que entrena">
@@ -205,6 +219,12 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
   chip: { flexDirection: "row", borderRadius: Spacing.four, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   warningBox: { borderWidth: 1, borderRadius: Spacing.three, padding: Spacing.three },
+  videoButton: {
+    alignSelf: "flex-start",
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
   transferRow: { gap: Spacing.half },
   linkRow: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
 });
