@@ -1683,6 +1683,26 @@ taxonomy tables, for every table. Only ids for rows *created in the same
 script* are safe to hardcode, because they're deterministic strings
 chosen there (like the `gym-*` exercise ids), not database-generated.
 
+### Fix: "sign in to confirm you're not a bot" on embedded video (2026-09-21)
+
+User hit this on their phone (Safari) tapping a video in the real app.
+Root-caused via web search rather than guessed: Safari's cross-site
+cookie blocking (ITP / iCloud Private Relay) stops the embedded player
+on `youtube.com` from seeing the viewer's actual YouTube login cookie,
+so YouTube treats the embed as anonymous/high-risk traffic and shows the
+bot check -- signing in again inside that context doesn't help because
+it's a separate, partitioned cookie jar from the user's normal browser
+session. This is a known, widely-reported issue, not specific to this
+app's code.
+
+Fix: `youtube-embed-web.tsx` now passes `host:
+"https://www.youtube-nocookie.com"` to `YT.Player` (privacy-enhanced
+mode) -- the most effective documented fix, since it avoids setting the
+tracking cookies that trigger the check in the first place. Verified
+`tsc --noEmit` and `expo export -p web` both clean. **Not yet confirmed
+by the user on the real device** -- next check-in should ask whether the
+video plays now without the bot-check prompt.
+
 ---
 
 ## References
