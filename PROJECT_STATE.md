@@ -1748,6 +1748,19 @@ circumstantial evidence to act on. The always-visible fallback link
 added earlier stays regardless -- it's what actually protects against a
 real embed failure now, not the host domain.
 
+### Fix: Spanish audio track timing bug (onReady too early) (2026-09-21, cont.)
+
+After the nocookie revert, user still saw English by default -- but this
+time confirmed via the gear icon that the video genuinely does have a
+Spanish track available, ruling out "this video has no dub" as the
+explanation. Root-caused via docs search: `getAvailableAudioTracks()`
+was only being called from `onReady`, but the audio-track module isn't
+guaranteed loaded by then -- `onApiChange` is YouTube's actual signal
+that a module with its own exposed methods (audio tracks included) has
+loaded. Added `onApiChange` as a second call site in
+`youtube-embed-web.tsx` (kept the `onReady` attempt too, harmless).
+**Not yet confirmed by the user on the real device.**
+
 ---
 
 ## References
