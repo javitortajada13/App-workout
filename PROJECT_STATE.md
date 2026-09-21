@@ -1761,6 +1761,33 @@ loaded. Added `onApiChange` as a second call site in
 `youtube-embed-web.tsx` (kept the `onReady` attempt too, harmless).
 **Not yet confirmed by the user on the real device.**
 
+### Closed: auto Spanish audio track was never really possible (2026-09-21, cont.)
+
+Real diagnostic output (added specifically to stop guessing, see the
+entry above) showed `getAvailableAudioTracks` is `undefined` on the
+`YT.Player` object every time, in both `onReady` and `onApiChange`. Web
+search confirmed why: **this method isn't in YouTube's official IFrame
+API reference at all** -- it's an undocumented method that exists on the
+real youtube.com player object in some contexts (e.g. the browser
+console on youtube.com itself), not on what the public embed constructor
+exposes. It was never going to work here. The one time it looked like it
+worked (very first test, hip-abduction video), the real explanation is
+almost certainly YouTube's own server-side default-track selection based
+on device/browser locale -- nothing this code did.
+
+**Reverted to a plain `<iframe>` embed** (`exercise/[id].tsx`), deleted
+`youtube-embed-web.tsx` entirely, removed the debug instrumentation. The
+always-visible "No carga el video? Abrelo aqui" fallback link stays --
+genuinely useful regardless (bot-check, network issues), independent of
+this whole audio-track thread.
+
+**Takeaway for next time a "the JS API has a method for that" claim comes
+up without being able to check official docs**: verify by testing on a
+real device/environment before building a whole feature around it, not
+after three rounds of debugging a "bug" that was actually "this was
+never a real method." Search-engine summaries of gists/blog posts are
+not the same as confirmed API surface.
+
 ---
 
 ## References
