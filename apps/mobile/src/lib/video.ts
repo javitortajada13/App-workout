@@ -5,7 +5,7 @@
 // client-side from videoUrl for now -- swap to exercise.thumbnailUrl first
 // if that ever gets populated.
 
-function youtubeVideoId(url: string): string | null {
+export function youtubeVideoId(url: string): string | null {
   const match = url.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/,
   );

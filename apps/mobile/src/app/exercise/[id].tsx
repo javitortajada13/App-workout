@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -6,11 +6,12 @@ import type { ExerciseDetail } from "@app-workout/shared";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { YoutubeEmbedWeb } from "@/components/youtube-embed-web";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { formatEvidence } from "@/lib/format";
 import { fetchExercise } from "@/lib/api";
-import { youtubeEmbedUrl } from "@/lib/video";
+import { youtubeVideoId } from "@/lib/video";
 
 const LINK_LABEL: Record<string, string> = {
   progression: "Progresion",
@@ -88,22 +89,16 @@ export default function ExerciseScreen() {
   }
 
   const evidenceLabel = formatEvidence(exercise.evidenceRating);
-  const embedUrl = exercise.videoUrl ? youtubeEmbedUrl(exercise.videoUrl) : null;
+  const videoId = exercise.videoUrl ? youtubeVideoId(exercise.videoUrl) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.container}>
         <ThemedText type="title">{exercise.name}</ThemedText>
 
-        {Platform.OS === "web" && embedUrl ? (
+        {Platform.OS === "web" && videoId ? (
           <ThemedView style={styles.videoEmbed}>
-            {createElement("iframe", {
-              src: embedUrl,
-              style: { width: "100%", height: "100%", border: "none" },
-              allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-              allowFullScreen: true,
-              title: exercise.name,
-            })}
+            <YoutubeEmbedWeb videoId={videoId} title={exercise.name} />
           </ThemedView>
         ) : (
           exercise.videoUrl && (
