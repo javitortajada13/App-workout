@@ -43,6 +43,8 @@ export interface ExerciseListItem {
   name: string;
   objective: string;
   evidenceRating: string | null;
+  videoUrl: string | null;
+  thumbnailUrl: string | null;
 }
 
 export interface ExerciseDetailAdmin {

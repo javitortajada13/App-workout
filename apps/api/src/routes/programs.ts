@@ -62,7 +62,14 @@ export function registerProgramRoutes(app: FastifyInstance) {
   app.get("/exercises", async () =>
     prisma.exercise.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, objective: true, evidenceRating: true },
+      select: {
+        id: true,
+        name: true,
+        objective: true,
+        evidenceRating: true,
+        videoUrl: true,
+        thumbnailUrl: true,
+      },
     }),
   );
 }
