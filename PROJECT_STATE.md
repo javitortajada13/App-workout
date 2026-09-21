@@ -437,10 +437,13 @@ decision above:
 - **M3 — DONE, confirmed 2026-09-21.** Exercise-library write API (see the
   M3 implementation log near the end of this file). No UI consumes it yet
   -- that's M5 (the admin web app).
-- M4–M7 as previously scoped (program-builder write API, the admin web app
-  itself, video playback + nav on mobile, polish) — unchanged by this
-  decision round, see the implementation-plan discussion in this
-  conversation for details; not yet transcribed here in full.
+- **M4 — DONE, confirmed 2026-09-21.** Program-builder write API (see the
+  M4 implementation log near the end of this file). No UI consumes it yet
+  -- that's M5.
+- M5–M7 as previously scoped (the admin web app itself, video playback +
+  nav on mobile, polish) — unchanged by this decision round, see the
+  implementation-plan discussion in this conversation for details; not
+  yet transcribed here in full.
 
 ### M1 implementation log
 
@@ -954,6 +957,60 @@ actually call these routes; until then this is backend-only, same
 situation `GET /me/programs` was in before M2's cutover. `GET
 /exercises/:id` and friends (the read side) were already public/unscoped
 from before this pass and still are — see the M2 log's note on that.
+
+### M4 implementation log
+
+**2026-09-21** — continuing the same autonomous session as M3. Built the
+program-builder write API: coach-only endpoints for the
+Program → Session → Block → BlockExercise hierarchy, so a coach can
+build a program through the API instead of only via `prisma/seed.ts`.
+
+- `apps/api/src/routes/program-admin.ts` (new), all coach-only:
+  - `POST /programs`, `PATCH /programs/:id` — a new program always starts
+    `status: draft` and unowned; **no `DELETE /programs/:id`** exists on
+    purpose, matching this project's own standing rule that program
+    history is never deleted, only archived (see the M2 log's
+    archive-on-reassign logic, which is still the only way a program's
+    `athleteId`/`status` changes).
+  - `POST /programs/:id/sessions`, `PATCH`/`DELETE /sessions/:id`.
+  - `POST /sessions/:id/blocks`, `PATCH`/`DELETE /blocks/:id`.
+  - `POST /blocks/:id/exercises`, `PATCH`/`DELETE /block-exercises/:id`
+    (the actual prescription row).
+  - Each level's `order` is enforced unique within its parent (matching
+    the schema's own `@@unique([parentId, order])` constraints) and
+    returns a clean 409 on a clash rather than a raw 500.
+- **A real bug found and fixed before this shipped**: every "does the
+  referenced parent/exercise/sport exist" check across both this file and
+  M3's `exercise-admin.ts` was originally written using
+  `isRecordNotFoundError` (Prisma code P2025). Before wiring this up,
+  empirically verified against real Postgres (not assumed) that a bad
+  foreign key on `create`/`upsert` actually throws **P2003**, never
+  P2025 — P2025 is specific to an `update`/`delete` whose `where` matches
+  no row. Every "parent not found" check in both files was wrong and
+  would have thrown an unhandled 500 instead of a clean 404. Added
+  `isForeignKeyConstraintError` (`apps/api/src/db.ts`) and fixed every
+  call site in both files (e.g. creating a session under a nonexistent
+  program, or attaching a nonexistent muscle to an exercise). Re-verified
+  each fixed path with a throwaway script after the fix, plus the one
+  that had already been correct (`isRecordNotFoundError` for genuine
+  update/delete-not-found cases) — confirmed still correct alongside it.
+  Worth remembering for any future write endpoint in this codebase: don't
+  assume which Prisma error code a given operation throws, check it.
+
+**Verification**: typecheck and build pass. HTTP-level: every new
+coach-only route returns 401 with no token (same sandbox limitation as
+M2/M3 — can't mint a real Supabase JWT here to test the 200 path), and
+the pre-existing public `GET /programs/:id` still works unchanged. The
+actual logic — the full four-level create chain, all three order-
+uniqueness constraints, both P2003 bad-FK cases (bad `programId` on a
+session, bad `exerciseId` on a block-exercise), Postgres's cascade delete
+(deleting a session correctly removes its blocks and block-exercises),
+and P2025 on updating an already-deleted row — was verified directly
+against real Prisma/Postgres with a throwaway script (not committed),
+then cleaned up.
+
+**Not built**: any UI (M5, same as M3). `DELETE /programs/:id` doesn't
+exist by design, not by omission.
 
 ---
 

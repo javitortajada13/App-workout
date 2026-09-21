@@ -19,3 +19,12 @@ export function isUniqueConstraintError(err: unknown): boolean {
 export function isRecordNotFoundError(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025";
 }
+
+// Prisma's error when a create/upsert references a foreign key that
+// doesn't exist (e.g. an exerciseId or sportId that isn't a real row).
+// Distinct from P2025 above: empirically verified against real
+// Postgres -- a bad FK on create/upsert throws P2003, never P2025 (which
+// is specific to update/delete finding no matching row).
+export function isForeignKeyConstraintError(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003";
+}

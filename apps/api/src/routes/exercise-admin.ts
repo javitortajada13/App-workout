@@ -6,7 +6,12 @@
 // this is shared knowledge, not per-athlete data.
 import type { FastifyInstance } from "fastify";
 import { authenticate, requireCoach } from "../auth.js";
-import { isRecordNotFoundError, isUniqueConstraintError, prisma } from "../db.js";
+import {
+  isForeignKeyConstraintError,
+  isRecordNotFoundError,
+  isUniqueConstraintError,
+  prisma,
+} from "../db.js";
 import { Emphasis, EvidenceRating, ExerciseLinkType } from "../generated/prisma/enums.js";
 
 interface ExerciseBody {
@@ -164,7 +169,7 @@ export function registerExerciseAdminRoutes(app: FastifyInstance) {
           create: { exerciseId, qualityId, emphasis },
         });
       } catch (err) {
-        if (isRecordNotFoundError(err)) {
+        if (isForeignKeyConstraintError(err)) {
           return reply.code(404).send({ error: "Exercise or physical quality not found" });
         }
         throw err;
@@ -209,7 +214,7 @@ export function registerExerciseAdminRoutes(app: FastifyInstance) {
           create: { exerciseId, muscleId, emphasis },
         });
       } catch (err) {
-        if (isRecordNotFoundError(err)) {
+        if (isForeignKeyConstraintError(err)) {
           return reply.code(404).send({ error: "Exercise or muscle not found" });
         }
         throw err;
@@ -251,7 +256,7 @@ export function registerExerciseAdminRoutes(app: FastifyInstance) {
           create: { exerciseId, equipmentId, required },
         });
       } catch (err) {
-        if (isRecordNotFoundError(err)) {
+        if (isForeignKeyConstraintError(err)) {
           return reply.code(404).send({ error: "Exercise or equipment not found" });
         }
         throw err;
@@ -308,7 +313,7 @@ export function registerExerciseAdminRoutes(app: FastifyInstance) {
         if (isUniqueConstraintError(err)) {
           return reply.code(409).send({ error: "This link already exists" });
         }
-        if (isRecordNotFoundError(err)) {
+        if (isForeignKeyConstraintError(err)) {
           return reply.code(404).send({ error: "One of the exercises was not found" });
         }
         throw err;
@@ -362,7 +367,7 @@ export function registerExerciseAdminRoutes(app: FastifyInstance) {
             .code(409)
             .send({ error: "This exercise already has a transfer claim for this sport" });
         }
-        if (isRecordNotFoundError(err)) {
+        if (isForeignKeyConstraintError(err)) {
           return reply.code(404).send({ error: "Exercise or sport not found" });
         }
         throw err;

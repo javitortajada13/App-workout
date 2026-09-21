@@ -5,6 +5,7 @@ import { registerAthleteRoutes } from "./routes/athletes.js";
 import { registerChatRoutes } from "./routes/chat.js";
 import { registerExerciseAdminRoutes } from "./routes/exercise-admin.js";
 import { registerMeRoutes } from "./routes/me.js";
+import { registerProgramAdminRoutes } from "./routes/program-admin.js";
 import { registerProgramRoutes } from "./routes/programs.js";
 import { registerTaxonomyRoutes } from "./routes/taxonomy.js";
 
@@ -20,6 +21,7 @@ registerMeRoutes(app);
 registerAthleteRoutes(app);
 registerExerciseAdminRoutes(app);
 registerTaxonomyRoutes(app);
+registerProgramAdminRoutes(app);
 
 const port = Number(process.env.PORT) || 3000;
 
