@@ -887,8 +887,15 @@ Prisma Studio — no local machine needed):
   Flagged here, not silently skipped.
 
 **M2 is now DONE**: schema, coach API, and the actual cutover are all
-live. M3 (exercise-library write API) is next, not started, and per the
-standing rule should not start without the user's go-ahead.
+live. Confirmed by the user on real devices with both real accounts,
+this time actually through the app itself (not just a curl/SQL check):
+logged in as `atleta1@test.com` (coach) and separately as
+`javiertortajada10@gmail.com` (the father, athlete role) — both see
+"julio y el resto" via the new `GET /me/programs` path. This is the
+first M1/M2 verification that closes the gap the auto-provisioning bug
+exposed: confirmed through the actual authenticated flow, not just
+visible UI. M3 (exercise-library write API) is next, not started, and
+per the standing rule should not start without the user's go-ahead.
 
 ---
 
