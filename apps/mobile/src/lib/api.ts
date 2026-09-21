@@ -2,8 +2,8 @@ import type {
   ChatMessage,
   ChatResponse,
   ExerciseDetail,
+  MyProgramSummary,
   ProgramDetail,
-  ProgramSummary,
   SessionDetail,
 } from "@app-workout/shared";
 
@@ -26,8 +26,12 @@ async function get<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function fetchPrograms() {
-  return get<ProgramSummary[]>("/programs");
+// Athlete-scoped: an athlete sees only their own active program, a coach
+// sees every non-archived one (see apps/api/src/routes/programs.ts).
+// Replaces the old fetchPrograms()/GET /programs, which returned every
+// program in the database to anyone, logged in or not.
+export function fetchMyPrograms() {
+  return get<MyProgramSummary[]>("/me/programs");
 }
 
 // Called once per session after login purely for its side effect: hitting

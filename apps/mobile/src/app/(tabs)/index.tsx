@@ -2,24 +2,24 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
-import type { ProgramSummary } from "@app-workout/shared";
+import type { MyProgramSummary } from "@app-workout/shared";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { fetchPrograms } from "@/lib/api";
+import { fetchMyPrograms } from "@/lib/api";
 
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [programs, setPrograms] = useState<ProgramSummary[] | null>(null);
+  const [programs, setPrograms] = useState<MyProgramSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      fetchPrograms()
+      fetchMyPrograms()
         .then((data) => {
           if (!cancelled) setPrograms(data);
         })

@@ -2,22 +2,18 @@ import type { MyProgramSummary } from "@app-workout/shared";
 import type { FastifyInstance } from "fastify";
 import { authenticate } from "../auth.js";
 import { prisma } from "../db.js";
-import {
-  loadExerciseDetail,
-  loadProgramDetail,
-  loadProgramSummaries,
-  loadSessionDetail,
-} from "../mappers.js";
+import { loadExerciseDetail, loadProgramDetail, loadSessionDetail } from "../mappers.js";
 
 export function registerProgramRoutes(app: FastifyInstance) {
-  // Deliberately left public and unscoped for now -- flipping this to
-  // require auth and filter by athleteId would immediately hide the one
-  // seeded program from every athlete, since it has no athleteId yet (see
-  // PROJECT_STATE.md section 13, M2 log: the seeded program still needs to
-  // be assigned to a real athlete, which only the coach can decide). Once
-  // that assignment exists, clients should switch to GET /me/programs
-  // below and this route can be locked down.
-  app.get("/programs", async () => loadProgramSummaries());
+  // GET /programs (public, unscoped -- returned every program to anyone)
+  // is gone: the seeded program is now actually assigned to a real
+  // athlete, so every client was switched to GET /me/programs below
+  // instead. See PROJECT_STATE.md section 13, M2 log.
+  //
+  // Note: /programs/:id, /sessions/:id and /exercises/:id below are
+  // still public/unscoped -- locking those down needs checking ownership
+  // through the Session/Block chain up to Program, which is more than
+  // this pass covers. Flagged as a follow-up, not silently left.
 
   // Athlete-scoped: only programs assigned to the calling profile. A coach
   // sees every non-archived program (they need visibility across

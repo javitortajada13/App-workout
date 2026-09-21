@@ -427,11 +427,13 @@ decision above:
   still **not** locked down or athlete-scoped — that is explicitly M2's
   job, along with `Program.athleteId`/`status`. Do not start M2 without
   the user's explicit go-ahead (per their instruction this milestone).
-- **M2 — IN PROGRESS, started 2026-09-20 overnight** (see the M2
-  implementation log near the end of this file for exactly what's built vs.
-  what still needs the user). Schema + coach-facing API done; the cutover
-  of the existing public `/programs` to require auth and be athlete-scoped
-  is deliberately **not** done yet — see that log for why.
+- **M2 — DONE, confirmed 2026-09-21.** Schema, coach-facing API, and the
+  actual cutover (mobile app now calls athlete-scoped `GET /me/programs`;
+  the old public `GET /programs` is deleted) are all live. See the M2
+  implementation log near the end of this file for the full story,
+  including a real bug it surfaced: M1's auth path was never actually
+  exercised by real app usage, only by manual testing (fixed as part of
+  this milestone).
 - M3–M7 as previously scoped (exercise-library write API, program-builder
   write API, the admin web app itself, video playback + nav on mobile,
   polish) — unchanged by this decision round, see the implementation-plan
@@ -838,6 +840,55 @@ both exist, the mobile/web app's program-list screen can be switched from
 `GET /programs` to `GET /me/programs` and `/programs` itself can finally
 be locked down — that's the very next, small step, deliberately not taken
 tonight.
+
+**2026-09-21 — cutover completed, M2 DONE.** The user was back online and
+walked through it live (via Supabase's SQL Editor in the browser, not
+Prisma Studio — no local machine needed):
+
+- Promoted `atleta1@test.com` (the only account that existed) to
+  `role: coach`.
+- **Found and fixed a real bug in the process**: the `Profile` table was
+  completely empty in Supabase, even though this same account had already
+  "successfully" logged in and seen real program data back in M1. Root
+  cause: `GET /programs` never required auth, so the app never made a
+  single authenticated request — `authenticate`'s auto-provisioning logic
+  (in `auth.ts`) was only ever exercised by manual curl testing against
+  `GET /me`, never by real app usage. **M1's own claim that the auth path
+  was end-to-end verified on a real device was wrong** — the login screen
+  and Supabase session worked, but nothing downstream of that ever
+  actually depended on the token being valid. Fixed by adding
+  `fetchMe()` (`apps/mobile/src/lib/api.ts`) and calling it once whenever
+  a session exists (`apps/mobile/src/app/_layout.tsx`), purely for its
+  provisioning side effect. Worth remembering: an M1/M2 "done" claim
+  based on what the UI visibly showed, without checking what the backend
+  actually recorded, missed this for a full day.
+- Created a real Supabase Auth user for the father
+  (`javiertortajada10@gmail.com`), confirmed automatically (Supabase's
+  dashboard-created users don't need the old "auto confirm" checkbox
+  version some docs mention).
+- Manually inserted both `Profile` rows via SQL (rather than waiting on
+  the app fix above to reach a real device) and assigned the seeded
+  program to the father: `athleteId` = his profile, `coachId` =
+  `atleta1@test.com`'s profile, `status = 'active'`. Verified with a join
+  query: `javiertortajada10@gmail.com | athlete | julio y el resto | active`.
+- With a real assignment in place, completed the cutover: `apps/mobile`'s
+  home and programs tabs now call `GET /me/programs`
+  (`fetchMyPrograms()`) instead of the old public `GET /programs`, which
+  has been **deleted** from `apps/api/src/routes/programs.ts` (along with
+  the now-dead `loadProgramSummaries` in `mappers.ts`) since nothing
+  calls it anymore. Typecheck, build, and a local smoke test all pass:
+  `/programs` → 404, `/me/programs` with no token → 401,
+  `/programs/:id` still public (see the note below).
+- **Not locked down**: `GET /programs/:id`, `GET /sessions/:id`, and
+  `GET /exercises/:id` are still public/unscoped — an athlete who knew
+  another program's id could still view it. Left alone deliberately:
+  scoping these needs walking the Session/Block chain back up to a
+  Program's `athleteId`, which is more surface than this pass covers.
+  Flagged here, not silently skipped.
+
+**M2 is now DONE**: schema, coach API, and the actual cutover are all
+live. M3 (exercise-library write API) is next, not started, and per the
+standing rule should not start without the user's go-ahead.
 
 ---
 

@@ -2,12 +2,7 @@
 // REST routes and the AI tools import from here, so the AI sees exactly the
 // same exercise shape a client would -- one source of truth for "what an
 // exercise looks like once it leaves the database."
-import type {
-  ExerciseDetail,
-  ProgramDetail,
-  ProgramSummary,
-  SessionDetail,
-} from "@app-workout/shared";
+import type { ExerciseDetail, ProgramDetail, SessionDetail } from "@app-workout/shared";
 import { prisma } from "./db.js";
 
 export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | null> {
@@ -65,21 +60,6 @@ export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | n
       evidenceRating: st.evidenceRating,
     })),
   };
-}
-
-export async function loadProgramSummaries(): Promise<ProgramSummary[]> {
-  const programs = await prisma.program.findMany({
-    include: { sport: true, sessions: { select: { id: true } } },
-    orderBy: { startDate: "desc" },
-  });
-  return programs.map((p) => ({
-    id: p.id,
-    name: p.name,
-    sportName: p.sport.name,
-    startDate: p.startDate.toISOString(),
-    endDate: p.endDate.toISOString(),
-    dayCount: p.sessions.length,
-  }));
 }
 
 export async function loadProgramDetail(id: string): Promise<ProgramDetail | null> {
