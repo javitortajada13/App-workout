@@ -38,6 +38,25 @@ services:
     runtime: static
     buildCommand: npm install && cd apps/mobile && npx expo export -p web
     staticPublishPath: apps/mobile/dist
+    # Dynamic routes ([id].tsx) export as a literal file named "[id].html"
+    # -- e.g. session/[id].html, not one file per real session id -- so a
+    # direct/refreshed visit to /session/<realId> 404s without these
+    # rewrites (confirmed by inspecting `npx expo export -p web`'s dist/
+    # output). Client-side navigation from within the app never hit this
+    # (no full page load), which is why it went unnoticed until someone
+    # opened a session/exercise link directly. Same underlying issue as
+    # app-workout-admin's `routes` block below, different cause (Expo's
+    # per-route static files vs. a single SPA index.html).
+    routes:
+      - type: rewrite
+        source: /session/*
+        destination: /session/[id].html
+      - type: rewrite
+        source: /exercise/*
+        destination: /exercise/[id].html
+      - type: rewrite
+        source: /program/*
+        destination: /program/[id].html
     envVars:
       - key: EXPO_PUBLIC_API_URL
         value: https://app-workout-api.onrender.com
