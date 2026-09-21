@@ -54,22 +54,25 @@ export default function ExerciseEditor() {
 
   const [exercise, setExercise] = useState<ExerciseDetailAdmin | null>(null);
   const [form, setForm] = useState<ExerciseWriteBody>(emptyForm);
+  const [aliasesText, setAliasesText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isNew) {
       setForm(emptyForm);
+      setAliasesText("");
       setExercise(null);
       return;
     }
     fetchExercise(id!)
       .then((ex) => {
         setExercise(ex);
+        setAliasesText(ex.aliases.join(", "));
         setForm({
           name: ex.name,
           objective: ex.objective,
-          aliases: [],
+          aliases: ex.aliases,
           description: ex.description ?? "",
           movementComplexity: ex.movementComplexity ?? "",
           contraindications: ex.contraindications ?? "",
@@ -95,6 +98,10 @@ export default function ExerciseEditor() {
     setError(null);
     const body: ExerciseWriteBody = {
       ...form,
+      aliases: aliasesText
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean),
       evidenceRating: form.evidenceRating || null,
       description: form.description || null,
       movementComplexity: form.movementComplexity || null,
@@ -143,6 +150,10 @@ export default function ExerciseEditor() {
         <div className="field">
           <label>Objetivo</label>
           <input value={form.objective} onChange={(e) => setField("objective", e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Alias (separados por coma)</label>
+          <input value={aliasesText} onChange={(e) => setAliasesText(e.target.value)} />
         </div>
         <div className="field">
           <label>Descripcion</label>

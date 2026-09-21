@@ -1147,6 +1147,25 @@ mapper intends. Not yet re-verified in the actual deployed admin UI --
 still blocked on the same Render Manual Sync action above, and on
 Supabase being reachable to log in for real.
 
+**2026-09-21 (cont.)** — self-review pass over `apps/admin` before moving
+on, specifically looking for the "form doesn't fully mirror the fetched
+entity" bug class the aliases field is prone to. Found exactly that:
+`ExerciseEditor.tsx`'s edit form initialized `aliases: []` unconditionally
+instead of `ex.aliases` when loading an existing exercise for editing --
+and there was no input field for aliases at all. Since `handleSave`'s
+`PATCH` body always included `aliases` (spread from `form`), **saving any
+edit to an existing exercise that had aliases would have silently wiped
+them** -- a real data-loss bug, never previously exercised since no
+exercise in the seed data has aliases set yet. Fixed: added an "Alias
+(separados por coma)" input, backed by its own `aliasesText` string state
+kept in sync with the fetched exercise, converted to `string[]` only at
+save time. Checked every other field for the same pattern (all others
+already used `ex.field ?? ""` correctly) and every other edit form in the
+app (`ProgramEditor.tsx`'s session/block/block-exercise editors) --
+none of them have this problem, since each only sends the specific
+fields it exposes an input for, and the API only patches fields present
+in the request body.
+
 ---
 
 ## References
