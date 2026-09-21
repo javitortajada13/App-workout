@@ -58,7 +58,9 @@ export interface SportTransferRef {
 }
 
 export interface ExerciseDetail extends ExerciseSummary {
+  aliases: string[];
   objective: string;
+  description: string | null;
   movementComplexity: string | null;
   contraindications: string | null;
   coachingCues: string | null;

@@ -55,4 +55,14 @@ export function registerProgramRoutes(app: FastifyInstance) {
     if (!exercise) return reply.code(404).send({ error: "Exercise not found" });
     return exercise;
   });
+
+  // Lightweight listing -- lets a coach find an exercise to edit without
+  // fetching every relationship for every row (that's what /exercises/:id
+  // is for). Public, same as the detail route above.
+  app.get("/exercises", async () =>
+    prisma.exercise.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, objective: true, evidenceRating: true },
+    }),
+  );
 }

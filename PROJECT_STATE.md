@@ -440,10 +440,16 @@ decision above:
 - **M4 — DONE, confirmed 2026-09-21.** Program-builder write API (see the
   M4 implementation log near the end of this file). No UI consumes it yet
   -- that's M5.
-- M5–M7 as previously scoped (the admin web app itself, video playback +
-  nav on mobile, polish) — unchanged by this decision round, see the
-  implementation-plan discussion in this conversation for details; not
-  yet transcribed here in full.
+- **M5 — DONE (first pass), confirmed 2026-09-21.** The coach admin web
+  app (`apps/admin`) exists and covers the core workflows: manage
+  athletes/assignment, build programs, manage the exercise library. See
+  the M5 implementation log near the end of this file for what's real
+  vs. what's a known, documented gap. Not yet deployed to a real URL or
+  tested with a live login (sandbox can't reach Supabase this session).
+- M6–M7 as previously scoped (video playback + nav on mobile, polish) —
+  unchanged by this decision round, see the implementation-plan
+  discussion in this conversation for details; not yet transcribed here
+  in full.
 
 ### M1 implementation log
 
@@ -1011,6 +1017,103 @@ then cleaned up.
 
 **Not built**: any UI (M5, same as M3). `DELETE /programs/:id` doesn't
 exist by design, not by omission.
+
+### M5 implementation log
+
+**2026-09-21** — continuing the same autonomous session as M3/M4. Built
+`apps/admin`, the separate coach-only web app decided on earlier in this
+file's V1 product decisions ("a separate web-based admin app (new
+package)... The Expo mobile app stays athlete-only"). New npm workspace,
+Vite + React + TypeScript + react-router — a plain SPA, not Expo, since
+this has no mobile/native target and doesn't need Expo Router's
+file-based routing or its web-export quirks. Reuses `@app-workout/shared`
+for the couple of types that already existed (`AthleteSummary`,
+`MyProgramSummary`); everything else (exercise/program admin shapes) is
+typed locally in `apps/admin/src/lib/api.ts` since nothing else consumes
+those shapes yet -- adding them to the shared package now would be
+speculative.
+
+- **Auth**: same Supabase project, `supabase.auth.signInWithPassword`
+  (`src/pages/Login.tsx`), same pattern as the mobile app's login. After
+  login, calls `GET /me` and refuses entry (with a "cerrar sesion" way
+  out) if the account's role isn't `coach` -- an athlete account can't
+  accidentally end up on the admin surface.
+- **Athletes** (`src/pages/Athletes.tsx`): lists athletes and each one's
+  active program (`GET /athletes`), assigns a program to an athlete via
+  the M2 `POST /athletes/:id/assign-program` endpoint (archive-on-
+  reassign logic already lived server-side; this is just its first UI).
+- **Programs** (`src/pages/Programs.tsx`, `ProgramEditor.tsx`): lists the
+  coach's programs (`GET /me/programs`), creates a new draft program, and
+  a nested builder UI for Session -> Block -> BlockExercise using every
+  M4 endpoint (add/delete at each level; no edit-in-place for existing
+  rows' fields yet, only add/remove -- see gaps below).
+- **Exercises** (`src/pages/Exercises.tsx`, `ExerciseEditor.tsx`): list
+  with client-side name search, create/edit/delete an exercise's base
+  fields, and manage its physical qualities/muscles/equipment (add with
+  emphasis, remove) and sport transfers (add only). Progression/
+  regression/variation/alternative links can be added but not removed
+  from this UI (see gaps below).
+- **A real read-side gap found and fixed while wiring this up**:
+  `GET /exercises/:id` (`loadExerciseDetail` in `mappers.ts`) never
+  returned `aliases` or `description` at all -- not a regression from
+  M3/M4, this was already missing from the original read path, just
+  never noticed because nothing before now needed to read a full exercise
+  back for editing. Fixed: both fields added to `ExerciseDetail` in
+  `packages/shared/src/types.ts` and to the mapper. Confirmed via
+  typecheck across every workspace (`npm run typecheck` at the repo
+  root) that this additive change didn't break the mobile app's existing
+  consumption of the same type.
+- **A missing read endpoint found and added**: there was no way to list
+  exercises at all (only single-item `GET /exercises/:id`), which the
+  admin app's exercise list/search and the program builder's "pick an
+  exercise" dropdowns both need. Added `GET /exercises` (public, like the
+  detail route) returning a lightweight `{id, name, objective,
+  evidenceRating}` list -- `apps/api/src/routes/programs.ts`.
+- **Deployment**: added a third `render.yaml` service,
+  `app-workout-admin` (free static site, same pattern as
+  `app-workout-web`), including a SPA rewrite rule (`/* -> /index.html`)
+  since this is client-side-routed and a direct reload on e.g.
+  `/programs/abc` would otherwise 404 on Render's static hosting. **Not
+  live yet** -- like `app-workout-web` before it, a new Render Blueprint
+  service needs a "Manual Sync" click in Render's dashboard before it
+  actually gets created; that's a one-time action only the user can take
+  (documented as the next action needed, below).
+
+**Verification**: typecheck (every workspace) and `vite build` both
+pass. Real login could not be tested -- this sandbox can't reach
+Supabase. Instead: built the app, served the production build locally
+(`vite preview`), and drove it with a real headless Chromium (via a
+throwaway `playwright-core` install, not added as a project dependency)
+to confirm the login page actually renders (email/password inputs
+present, page title correct) with zero console/page errors, and that
+navigating directly to a protected path like `/athletes` while logged
+out correctly falls back to the login screen rather than crashing or
+leaking the layout. This confirms the auth-gating logic works
+structurally; it does not confirm a real coach can actually log in and
+use it end-to-end -- that still needs the user, once this is deployed.
+
+**Known gaps, left deliberately rather than silently**:
+- No edit-in-place for an existing session/block/block-exercise's fields
+  from the builder UI -- only add and delete. Editing today means delete
+  + re-add.
+- No program header edit (name/dates/coachNote) from the UI, even though
+  `PATCH /programs/:id` exists server-side.
+- Can't remove an exercise link or a sport-transfer claim from the UI
+  (`DELETE /exercise-links/:id` and `DELETE /sport-transfers/:id` exist
+  server-side) -- the read side (`loadExerciseDetail`) doesn't return
+  their row ids, only the exercise-link's target and the transfer's
+  content, so there's nothing to delete *by* from a fetched list yet.
+  Fixing this means extending that mapper's shape again, deliberately not
+  done in this same pass to keep this diff reviewable.
+- No visual polish (per this project's own V1 decision to defer that).
+
+**One thing needed from the user, whenever they're back**: in Render's
+dashboard, open this Blueprint and click "Manual Sync" (the same step
+that was needed for `app-workout-web`) so the new `app-workout-admin`
+static site actually gets created and deployed. After that, log in with
+the coach account (`atleta1@test.com`) at whatever URL Render assigns it
+to confirm the whole thing actually works for a real person, not just in
+a headless browser.
 
 ---
 

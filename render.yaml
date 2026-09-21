@@ -45,3 +45,26 @@ services:
         value: https://edljvcpkkygdnsfrpnmm.supabase.co
       - key: EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
         value: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE
+
+  # M5: the coach-only admin web app (apps/admin), a separate Vite/React
+  # app per the standing product decision (PROJECT_STATE.md section 13 --
+  # the athlete-facing mobile app stays athlete-only). Free static site,
+  # same reasoning as app-workout-web above. `routes` is needed because
+  # this is a client-side-routed SPA (react-router): without the rewrite,
+  # reloading on e.g. /programs/abc would 404 instead of serving the app.
+  - type: web
+    name: app-workout-admin
+    runtime: static
+    buildCommand: npm install && npm run build --workspace=apps/admin
+    staticPublishPath: apps/admin/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://app-workout-api.onrender.com
+      - key: VITE_SUPABASE_URL
+        value: https://edljvcpkkygdnsfrpnmm.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE
