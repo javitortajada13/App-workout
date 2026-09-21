@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -6,12 +6,11 @@ import type { ExerciseDetail } from "@app-workout/shared";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { YoutubeEmbedWeb } from "@/components/youtube-embed-web";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { formatEvidence } from "@/lib/format";
 import { fetchExercise } from "@/lib/api";
-import { youtubeVideoId } from "@/lib/video";
+import { youtubeEmbedUrl } from "@/lib/video";
 
 const LINK_LABEL: Record<string, string> = {
   progression: "Progresion",
@@ -52,7 +51,6 @@ export default function ExerciseScreen() {
   const router = useRouter();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [videoDebug, setVideoDebug] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,35 +88,30 @@ export default function ExerciseScreen() {
   }
 
   const evidenceLabel = formatEvidence(exercise.evidenceRating);
-  const videoId = exercise.videoUrl ? youtubeVideoId(exercise.videoUrl) : null;
+  const embedUrl = exercise.videoUrl ? youtubeEmbedUrl(exercise.videoUrl) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.container}>
         <ThemedText type="title">{exercise.name}</ThemedText>
 
-        {Platform.OS === "web" && videoId ? (
+        {Platform.OS === "web" && embedUrl ? (
           <ThemedView style={styles.videoBlock}>
             <ThemedView style={styles.videoEmbed}>
-              <YoutubeEmbedWeb
-                videoId={videoId}
-                title={exercise.name}
-                onDebug={(msg) => setVideoDebug((prev) => [...prev, msg])}
-              />
+              {createElement("iframe", {
+                src: embedUrl,
+                style: { width: "100%", height: "100%", border: "none" },
+                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                allowFullScreen: true,
+                title: exercise.name,
+              })}
             </ThemedView>
-            {/* TEMPORARY diagnostic output -- remove once the Spanish
-                audio-track bug is actually root-caused and fixed. */}
-            {videoDebug.length > 0 && (
-              <ThemedText type="small" style={{ fontFamily: "monospace", fontSize: 10 }}>
-                {videoDebug.join(" | ")}
-              </ThemedText>
-            )}
             {/* YouTube sometimes shows a "sign in to confirm you're not a bot"
                 overlay inside the embed depending on the viewer's network/device
-                -- our code can't detect or bypass that (the iframe's content is
-                cross-origin, invisible to us), so this fallback link is always
-                shown rather than conditionally, giving a guaranteed way to watch
-                the video without asking anyone to change device settings. */}
+                (a VPN, for example) -- our code can't detect or bypass that (the
+                iframe's content is cross-origin, invisible to us), so this
+                fallback link is always shown rather than conditionally, giving a
+                guaranteed way to watch the video without any troubleshooting. */}
             <Pressable onPress={() => Linking.openURL(exercise.videoUrl!)}>
               <ThemedText type="small" style={{ color: theme.accent, textAlign: "center" }}>
                 No carga el video? Abrelo aqui
