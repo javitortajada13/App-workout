@@ -95,10 +95,6 @@ export default function ExerciseScreen() {
           {exercise.name}
         </ThemedText>
 
-        <Section title="Por que">
-          <ThemedText>{exercise.objective}</ThemedText>
-        </Section>
-
         {exercise.videoUrl && (
           <Pressable
             onPress={() => Linking.openURL(exercise.videoUrl!)}
@@ -112,6 +108,26 @@ export default function ExerciseScreen() {
             </ThemedText>
           </Pressable>
         )}
+
+        {exercise.coachingCues && (
+          <Section title="Como hacerlo">
+            <ThemedText>{exercise.coachingCues}</ThemedText>
+          </Section>
+        )}
+
+        {exercise.equipment.length > 0 && (
+          <Section title="Equipamiento">
+            <ThemedView style={styles.chipRow}>
+              {exercise.equipment.map((e) => (
+                <Chip key={e.id} label={e.name} sublabel={e.required ? undefined : "opcional"} />
+              ))}
+            </ThemedView>
+          </Section>
+        )}
+
+        <Section title="Por que">
+          <ThemedText>{exercise.objective}</ThemedText>
+        </Section>
 
         {exercise.physicalQualities.length > 0 && (
           <Section title="Que entrena">
@@ -130,22 +146,6 @@ export default function ExerciseScreen() {
                 <Chip key={m.id} label={m.name} />
               ))}
             </ThemedView>
-          </Section>
-        )}
-
-        {exercise.equipment.length > 0 && (
-          <Section title="Equipamiento">
-            <ThemedView style={styles.chipRow}>
-              {exercise.equipment.map((e) => (
-                <Chip key={e.id} label={e.name} sublabel={e.required ? undefined : "opcional"} />
-              ))}
-            </ThemedView>
-          </Section>
-        )}
-
-        {exercise.coachingCues && (
-          <Section title="Claves de coaching">
-            <ThemedText>{exercise.coachingCues}</ThemedText>
           </Section>
         )}
 
