@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { SessionDetail } from "@app-workout/shared";
@@ -10,6 +10,7 @@ import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { formatPrescription } from "@/lib/format";
 import { fetchSession } from "@/lib/api";
+import { youtubeThumbnailUrl } from "@/lib/video";
 
 export default function SessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -77,26 +78,38 @@ export default function SessionScreen() {
               )}
 
               <View style={styles.exerciseList}>
-                {block.exercises.map((be) => (
-                  <Pressable
-                    key={be.id}
-                    onPress={() => router.push(`/exercise/${be.exercise.id}`)}
-                    style={({ pressed }) => [
-                      styles.exerciseRow,
-                      { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-                    ]}
-                  >
-                    <ThemedText type="smallBold">{be.exercise.name}</ThemedText>
-                    <ThemedText themeColor="textSecondary" type="small">
-                      {formatPrescription(be)}
-                    </ThemedText>
-                    {be.instanceNote && (
-                      <ThemedText themeColor="textSecondary" type="small" style={styles.note}>
-                        {be.instanceNote}
-                      </ThemedText>
-                    )}
-                  </Pressable>
-                ))}
+                {block.exercises.map((be) => {
+                  const thumbnail =
+                    be.exercise.thumbnailUrl ??
+                    (be.exercise.videoUrl ? youtubeThumbnailUrl(be.exercise.videoUrl) : null);
+                  return (
+                    <Pressable
+                      key={be.id}
+                      onPress={() => router.push(`/exercise/${be.exercise.id}`)}
+                      style={({ pressed }) => [
+                        styles.exerciseRow,
+                        { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      {thumbnail ? (
+                        <Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+                      ) : (
+                        <View style={[styles.thumbnail, { backgroundColor: theme.background }]} />
+                      )}
+                      <View style={styles.exerciseInfo}>
+                        <ThemedText type="smallBold">{be.exercise.name}</ThemedText>
+                        <ThemedText themeColor="textSecondary" type="small">
+                          {formatPrescription(be)}
+                        </ThemedText>
+                        {be.instanceNote && (
+                          <ThemedText themeColor="textSecondary" type="small" style={styles.note}>
+                            {be.instanceNote}
+                          </ThemedText>
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           ))}
@@ -114,6 +127,8 @@ const styles = StyleSheet.create({
   blockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   purpose: { fontStyle: "italic" },
   exerciseList: { gap: Spacing.two },
-  exerciseRow: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
+  exerciseRow: { flexDirection: "row", alignItems: "center", borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.three },
+  thumbnail: { width: 56, height: 56, borderRadius: Spacing.two },
+  exerciseInfo: { flex: 1, gap: Spacing.half },
   note: { fontStyle: "italic" },
 });

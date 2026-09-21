@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet } from "react-native";
+import { createElement, useEffect, useState } from "react";
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ExerciseDetail } from "@app-workout/shared";
@@ -10,6 +10,7 @@ import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { formatEvidence } from "@/lib/format";
 import { fetchExercise } from "@/lib/api";
+import { youtubeEmbedUrl } from "@/lib/video";
 
 const LINK_LABEL: Record<string, string> = {
   progression: "Progresion",
@@ -87,24 +88,37 @@ export default function ExerciseScreen() {
   }
 
   const evidenceLabel = formatEvidence(exercise.evidenceRating);
+  const embedUrl = exercise.videoUrl ? youtubeEmbedUrl(exercise.videoUrl) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.container}>
         <ThemedText type="title">{exercise.name}</ThemedText>
 
-        {exercise.videoUrl && (
-          <Pressable
-            onPress={() => Linking.openURL(exercise.videoUrl!)}
-            style={({ pressed }) => [
-              styles.videoButton,
-              { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
-              Ver video
-            </ThemedText>
-          </Pressable>
+        {Platform.OS === "web" && embedUrl ? (
+          <ThemedView style={styles.videoEmbed}>
+            {createElement("iframe", {
+              src: embedUrl,
+              style: { width: "100%", height: "100%", border: "none" },
+              allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+              allowFullScreen: true,
+              title: exercise.name,
+            })}
+          </ThemedView>
+        ) : (
+          exercise.videoUrl && (
+            <Pressable
+              onPress={() => Linking.openURL(exercise.videoUrl!)}
+              style={({ pressed }) => [
+                styles.videoButton,
+                { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+                Ver video
+              </ThemedText>
+            </Pressable>
+          )
         )}
 
         {exercise.coachingCues && (
@@ -226,6 +240,12 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
+  },
+  videoEmbed: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    borderRadius: Spacing.three,
+    overflow: "hidden",
   },
   transferRow: { gap: Spacing.half },
   linkRow: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
