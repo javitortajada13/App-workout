@@ -1430,6 +1430,87 @@ Key points not to lose:
   the old mockup's palette" -- flagging this now rather than silently
   picking one.
 
+### Father's full-body program built (2026-09-21)
+
+Finished the exercise-identification/program-design thread from the
+previous log entry. Key corrections and decisions, in case this needs
+re-deriving later:
+
+- **Two exercises I had proposed (`gym-machine-chest-press`,
+  `gym-lat-pulldown-machine`) were never actually shown in any of the
+  user's video screenshots** -- I added them without a real source and
+  the user caught it. Per this project's core rule (never invent
+  exercise facts), they stay in the `Exercise` table as legitimate
+  generic entries usable for *other* future programs, but they are
+  explicitly **not** part of the father's routine. Lesson: cross-check
+  "what did the user actually show me" against "what did I propose"
+  before treating my own earlier proposal as confirmed fact.
+- The 8 exercises actually confirmed from video, and their real
+  pairing/order (parents rotating turns within the same shared block,
+  not one exercise fixed per parent):
+  - Block: abduccion de cadera con banda + patada de gluteo con banda
+  - Block: marcha lateral con banda (monster walk) + sentadilla dividida
+    con apoyo
+  - Block: movilidad de cadera/isquiotibial con pie elevado + flexion
+    lateral de tronco con mancuerna
+  - Block: marcha rotacional con balon medicinal + estiramiento de pie
+    tocando la punta de los pies
+- Real trainer's brief (Kike Montero, via WhatsApp): two full-body
+  sessions, ~40 min, one exercise per muscle region, don't overcomplicate
+  it. The filmed routine above is 100% hip/leg/core -- **zero upper-body
+  work** -- so it didn't actually satisfy "full body" on its own.
+- Added two new exercises to close that gap: `gym-standing-band-chest-press`
+  and `gym-standing-band-row` (standing resistance-band press/row, real
+  YouTube reference videos found via WebSearch, not verified frame-by-frame
+  the way the father's own videos were -- flagged to the user as such).
+  Chosen over machine/barbell alternatives specifically to match the
+  equipment/risk profile of the rest of his routine (band resistance: no
+  Valsalva maneuver, no free weight to stabilize, stoppable mid-rep,
+  progressive resistance) -- the user's own observation that his father's
+  exercises were band/mobility-based rather than "gym gym" machine work,
+  which was the right call.
+- **Medical/liability context, explicit and important**: for this
+  specific athlete the user confirmed neither the real trainer nor a
+  cardiologist will sign off on this routine -- the trainer explicitly
+  delegated program-design responsibility to the user, and the father's
+  last cardiac evaluation was ~10 years ago (survived MI at 28, survived
+  sudden cardiac death at 53 with resuscitation, triple bypass, ICD/DAI;
+  has since returned to playing tennis regularly). The user asked me
+  directly to weigh in as a trainer would. I gave a general
+  exercise-science opinion (band-based standing press/row over
+  barbell/machine, conservative progression starting light and advancing
+  only once technique/tolerance is comfortable across two sessions) but
+  was explicit that I'm not making a clinical call for this specific
+  person -- this is recorded here so a future session doesn't either (a)
+  re-litigate this from scratch, or (b) mistake my general reasoning for
+  medical clearance.
+- Built the full program as SQL:
+  `/tmp/.../scratchpad/father-fullbody-program.sql` (not committed to the
+  repo; sent to the user via SendUserFile). Contains: the original 10
+  gym exercises (idempotent, safe to re-run even if already applied),
+  the 2 new band exercises + their taxonomy, a new `Sport` row
+  ("Acondicionamiento general" -- this program isn't padel, so it needed
+  its own sport-agnostic category rather than being force-fit under
+  "Padel"), and the full `Program`/`Session`/`Block`/`BlockExercise` tree
+  (2 sessions x 3 blocks x full prescriptions). Created with
+  `status = 'draft'` and no `athleteId`/`coachId` set on purpose --
+  assignment happens through the existing admin-app flow (Atletas ->
+  pick this program -> Asignar), which already handles archiving
+  "julio y el resto" for him correctly; I deliberately didn't hardcode
+  his Profile id into raw SQL.
+  Verified locally against dev Postgres inside a transaction (12
+  exercises confirmed present, full 2-session/6-block/10-exercise
+  structure confirmed via join query), then rolled back before handing
+  to the user -- same verify-then-handoff pattern as the earlier
+  10-exercise script.
+- **Still open**: whether the original 10-exercise script
+  (`add-gym-exercises.sql`) has actually been run against production
+  Supabase was never confirmed by the user ("Lo otro no lo he mirado").
+  The new combined script is safe to run regardless (fully idempotent),
+  so this doesn't block anything, but worth checking if exercise data
+  looks inconsistent later. Also still open: whether the user has run
+  this new script against production and assigned the program yet.
+
 ---
 
 ## References
