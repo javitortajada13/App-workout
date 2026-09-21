@@ -36,8 +36,8 @@ function Chip({ label, sublabel }: { label: string; sublabel?: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <ThemedView style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        {title.toUpperCase()}
+      <ThemedText type="label" themeColor="textSecondary">
+        {title}
       </ThemedText>
       {children}
     </ThemedView>
@@ -91,19 +91,17 @@ export default function ExerciseScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          {exercise.name}
-        </ThemedText>
+        <ThemedText type="title">{exercise.name}</ThemedText>
 
         {exercise.videoUrl && (
           <Pressable
             onPress={() => Linking.openURL(exercise.videoUrl!)}
             style={({ pressed }) => [
               styles.videoButton,
-              { backgroundColor: theme.text, opacity: pressed ? 0.8 : 1 },
+              { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <ThemedText style={{ color: theme.background }} type="smallBold">
+            <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
               Ver video
             </ThemedText>
           </Pressable>
@@ -151,7 +149,12 @@ export default function ExerciseScreen() {
 
         {exercise.contraindications && (
           <Section title="Contraindicaciones">
-            <ThemedView style={[styles.warningBox, { borderColor: theme.text }]}>
+            <ThemedView
+              style={[
+                styles.warningBox,
+                { backgroundColor: theme.warningBg, borderColor: theme.warningBorder },
+              ]}
+            >
               <ThemedText>{exercise.contraindications}</ThemedText>
             </ThemedView>
           </Section>
@@ -189,7 +192,7 @@ export default function ExerciseScreen() {
                 ]}
               >
                 <ThemedText type="smallBold">{link.exercise.name}</ThemedText>
-                <ThemedText themeColor="textSecondary" type="small">
+                <ThemedText type="small" style={{ color: theme.accent, fontWeight: "700" }}>
                   {LINK_LABEL[link.relationshipType] ?? link.relationshipType}
                 </ThemedText>
                 {link.rationale && (
@@ -214,10 +217,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     gap: Spacing.four,
   },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   section: { gap: Spacing.two },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
-  chip: { flexDirection: "row", borderRadius: Spacing.four, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  chip: { flexDirection: "row", borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   warningBox: { borderWidth: 1, borderRadius: Spacing.three, padding: Spacing.three },
   videoButton: {
     alignSelf: "flex-start",

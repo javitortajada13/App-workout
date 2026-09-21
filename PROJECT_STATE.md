@@ -1241,6 +1241,76 @@ screen.** Two distinct pieces of feedback, treated differently:
    point) or keep deferring. Awaiting their answer before doing any
    visual/styling work.
 
+**2026-09-21 (cont.) — visual design deferral lifted, first real pass
+applied.** User: "Puedes modificar el diseño visual ligeramente aunque
+sea para que se vea bien... hazlo ahora todo lo mejor que puedas" (do a
+best-effort pass now, perfect it later) -- explicit reversal of the
+earlier deferral for a first real pass, not final polish.
+
+Read the design-preview artifact (`bd82a155-...`, see References) and
+pulled its actual design tokens rather than inventing new ones -- it
+already had a considered palette (warm off-white / near-black canvas,
+`#0C7C8C` teal accent in light mode, `#35D6C7` in dark) and type scale
+that nobody had ever wired into the real app.
+
+- `apps/mobile/src/constants/theme.ts`: replaced the generic
+  black/white/gray `Colors` with the artifact's real palette, plus new
+  `accent`/`accentContrast`/`border`/`warningBg`/`warningBorder` keys.
+- `apps/mobile/src/components/themed-text.tsx`: `title` (was 48px/600,
+  now 26px/800 -- the artifact's actual header size, not an arbitrary
+  splash-screen-sized default), `subtitle` (19px/700), and a new `label`
+  type (11px/700/uppercase/letter-spaced) for section headers like "POR
+  QUE" -- replaces several screens' manual `.toUpperCase()` string calls.
+- Every primary action (login button, "Preguntale al coach", chat send,
+  "Ver video") now uses `theme.accent`/`accentContrast` instead of a
+  flat `theme.text`/`theme.background` swap.
+- Exercise detail: contraindications box now uses `warningBg`/
+  `warningBorder` (a warm amber warning, not just a plain outlined box);
+  the "Variaciones" relationship label (progression/regression/...) is
+  now accent-colored, matching the artifact's `.kind` style.
+- `apps/mobile/src/app/_layout.tsx`: the pushed-screen header (Programa/
+  Sesion/Ejercicio) had **no theming at all** before this -- it was
+  running on React Navigation's untouched default, which doesn't track
+  light/dark mode. Added `screenOptions` so the header background/text
+  color actually follows the app's theme.
+- **Root-caused the exact screenshot the user sent** (solid black
+  "Bloque 2/3/4" bars in `session/[id].tsx`): `block`/`blockHeader` were
+  wrapped in `ThemedView` with no `type` prop, which defaults to
+  `theme.background` -- on a dark-mode device that's pure black, painted
+  as a solid bar behind plain text, with no relation to the actual
+  content hierarchy. The design-preview artifact never boxed these at
+  all -- a block header is just bold+muted text floating on the page,
+  only the individual exercise rows are real (elevated) cards. Fixed by
+  switching those wrappers to plain (unstyled, transparent) `View`.
+  This was a real layout bug, not a missing coat of paint -- worth
+  remembering that "no me gusta el diseño" from a user can be pointing
+  at an actual defect, not just an aesthetic preference.
+- Removed the per-screen `styles.title` overrides that existed on nearly
+  every screen (`program/[id].tsx`, `session/[id].tsx`, `login.tsx`,
+  `(tabs)/index.tsx`, `(tabs)/programs.tsx`, `exercise/[id].tsx`) --
+  each one was silently fighting the shared `ThemedText type="title"`
+  style with its own `fontSize: 28`. Now every screen gets one
+  consistent title treatment from one place.
+
+**Verified**: typecheck passes, `npx expo export -p web` still builds
+all 14 routes. Actually looked at the result, not just checked for
+errors -- served the exported build locally and screenshotted `/login`
+in both light and dark mode with a throwaway `playwright-core` install
+(same approach as M5's admin-app check): warm off-white background with
+a solid teal CTA in light mode, near-black background with a bright
+teal CTA in dark mode -- both readable, both matching the artifact's
+intent. Deeper screens (session/exercise, where the actual bug was)
+could **not** be screenshotted this way since they're behind
+`Stack.Protected` auth and this sandbox can't log in against Supabase --
+confirming those needs the user on a real device or the web deployment,
+same limitation as every other UI change this session.
+
+**Not done**: actual icon/splash-screen artwork (`app.json` still points
+at the generic Expo template images) -- that needs real graphic assets,
+not a code change, and wasn't attempted. The admin app (`apps/admin`)
+was left untouched in this pass; the user's complaint was specifically
+about the athlete-facing mobile/web screens.
+
 ---
 
 ## References

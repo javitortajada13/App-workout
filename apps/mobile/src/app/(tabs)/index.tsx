@@ -37,9 +37,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Hola
-        </ThemedText>
+        <ThemedText type="title">Hola</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
           Tu coach de preparacion fisica para padel
         </ThemedText>
@@ -80,10 +78,10 @@ export default function HomeScreen() {
           onPress={() => router.push("/(tabs)/coach")}
           style={({ pressed }) => [
             styles.coachButton,
-            { backgroundColor: theme.text, opacity: pressed ? 0.8 : 1 },
+            { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <ThemedText style={{ color: theme.background }} type="smallBold">
+          <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
             Preguntale al coach
           </ThemedText>
         </Pressable>
@@ -100,7 +98,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
     gap: Spacing.three,
   },
-  title: { textAlign: "left" },
   subtitle: { marginTop: -Spacing.two },
   card: {
     borderRadius: Spacing.three,

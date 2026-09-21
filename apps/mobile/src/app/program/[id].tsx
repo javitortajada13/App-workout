@@ -45,10 +45,8 @@ export default function ProgramScreen() {
 
         {program && (
           <>
-            <ThemedText type="title" style={styles.title}>
-              {program.name}
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="title">{program.name}</ThemedText>
+            <ThemedText themeColor="textSecondary" type="small">
               {program.sportName} · {new Date(program.startDate).toLocaleDateString()} -{" "}
               {new Date(program.endDate).toLocaleDateString()}
             </ThemedText>
@@ -91,7 +89,6 @@ export default function ProgramScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   list: { gap: Spacing.two, paddingTop: Spacing.two },
   row: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
   rowHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

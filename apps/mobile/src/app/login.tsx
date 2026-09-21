@@ -34,9 +34,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Iniciar sesion
-        </ThemedText>
+        <ThemedText type="title">Iniciar sesion</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
           Introduce el email y la contrasena que te ha dado tu entrenador.
         </ThemedText>
@@ -70,15 +68,15 @@ export default function LoginScreen() {
             style={({ pressed }) => [
               styles.button,
               {
-                backgroundColor: theme.text,
+                backgroundColor: theme.accent,
                 opacity: pressed || submitting || !email.trim() || !password ? 0.6 : 1,
               },
             ]}
           >
             {submitting ? (
-              <ActivityIndicator color={theme.background} />
+              <ActivityIndicator color={theme.accentContrast} />
             ) : (
-              <ThemedText style={{ color: theme.background }} type="smallBold">
+              <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
                 Entrar
               </ThemedText>
             )}
@@ -97,7 +95,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
-  title: { textAlign: "left" },
   subtitle: { marginTop: -Spacing.two },
   form: { gap: Spacing.two, marginTop: Spacing.three },
   input: { borderRadius: Spacing.two, padding: Spacing.three, fontSize: 16 },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { SessionDetail } from "@app-workout/shared";
@@ -47,9 +47,7 @@ export default function SessionScreen() {
 
       {session && (
         <ScrollView contentContainerStyle={styles.container}>
-          <ThemedText type="title" style={styles.title}>
-            {session.label}
-          </ThemedText>
+          <ThemedText type="title">{session.label}</ThemedText>
 
           {session.blocks.length === 0 && (
             <ThemedView type="backgroundElement" style={styles.emptyBlock}>
@@ -60,15 +58,17 @@ export default function SessionScreen() {
           )}
 
           {session.blocks.map((block) => (
-            <ThemedView key={block.id} style={styles.block}>
-              <ThemedView style={styles.blockHeader}>
-                <ThemedText type="smallBold">Bloque {block.order}</ThemedText>
+            <View key={block.id} style={styles.block}>
+              <View style={styles.blockHeader}>
+                <ThemedText type="label" themeColor="textSecondary">
+                  Bloque {block.order}
+                </ThemedText>
                 {block.rounds ? (
                   <ThemedText themeColor="textSecondary" type="small">
                     {block.rounds} veces
                   </ThemedText>
                 ) : null}
-              </ThemedView>
+              </View>
 
               {block.purpose && (
                 <ThemedText themeColor="textSecondary" type="small" style={styles.purpose}>
@@ -76,7 +76,7 @@ export default function SessionScreen() {
                 </ThemedText>
               )}
 
-              <ThemedView style={styles.exerciseList}>
+              <View style={styles.exerciseList}>
                 {block.exercises.map((be) => (
                   <Pressable
                     key={be.id}
@@ -86,7 +86,7 @@ export default function SessionScreen() {
                       { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
                     ]}
                   >
-                    <ThemedText>{be.exercise.name}</ThemedText>
+                    <ThemedText type="smallBold">{be.exercise.name}</ThemedText>
                     <ThemedText themeColor="textSecondary" type="small">
                       {formatPrescription(be)}
                     </ThemedText>
@@ -97,8 +97,8 @@ export default function SessionScreen() {
                     )}
                   </Pressable>
                 ))}
-              </ThemedView>
-            </ThemedView>
+              </View>
+            </View>
           ))}
         </ScrollView>
       )}
@@ -109,7 +109,6 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   emptyBlock: { borderRadius: Spacing.three, padding: Spacing.three },
   block: { gap: Spacing.two },
   blockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },

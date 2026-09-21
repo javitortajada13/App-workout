@@ -35,9 +35,7 @@ export default function ProgramsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Programas
-        </ThemedText>
+        <ThemedText type="title">Programas</ThemedText>
 
         {error && <ThemedText>No se pudo conectar con el servidor: {error}</ThemedText>}
         {!error && programs === null && <ActivityIndicator color={theme.text} />}
@@ -76,7 +74,6 @@ export default function ProgramsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.three },
-  title: { textAlign: "left" },
   list: { gap: Spacing.two },
   row: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
 });
