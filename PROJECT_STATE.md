@@ -440,12 +440,16 @@ decision above:
 - **M4 — DONE, confirmed 2026-09-21.** Program-builder write API (see the
   M4 implementation log near the end of this file). No UI consumes it yet
   -- that's M5.
-- **M5 — DONE (first pass), confirmed 2026-09-21.** The coach admin web
-  app (`apps/admin`) exists and covers the core workflows: manage
-  athletes/assignment, build programs, manage the exercise library. See
-  the M5 implementation log near the end of this file for what's real
-  vs. what's a known, documented gap. Not yet deployed to a real URL or
-  tested with a live login (sandbox can't reach Supabase this session).
+- **M5 — DONE, confirmed live 2026-09-21.** The coach admin web app
+  (`apps/admin`) covers the core workflows: manage athletes/assignment,
+  build programs, manage the exercise library. Deployed at
+  `https://app-workout-admin.onrender.com` and confirmed working with a
+  real coach login (`atleta1@test.com`) -- not just a headless-browser
+  check. See the M5 implementation log near the end of this file for what
+  was built, a real aliases-data-loss bug this pass found and fixed, and
+  the one deploy-ordering issue hit along the way (blank screen on first
+  load, fixed by rebuilding after env vars were in place -- not a code
+  bug).
 - M6–M7 as previously scoped (video playback + nav on mobile, polish) —
   unchanged by this decision round, see the implementation-plan
   discussion in this conversation for details; not yet transcribed here
@@ -1165,6 +1169,29 @@ app (`ProgramEditor.tsx`'s session/block/block-exercise editors) --
 none of them have this problem, since each only sends the specific
 fields it exposes an input for, and the API only patches fields present
 in the request body.
+
+**2026-09-21 (cont.) — M5 confirmed live.** User did the Render Manual
+Sync, which created `app-workout-admin` and deployed it successfully
+(all green). First load showed a **blank white screen** -- not a build
+failure (the deploy itself succeeded), but a runtime one: Vite bakes
+`import.meta.env.VITE_*` values in at *build* time, and this service's
+env vars were still being added when that first build ran, so
+`apps/admin/src/lib/supabase.ts`'s guard (`if (!supabaseUrl ||
+!supabaseAnonKey) throw new Error(...)`) threw immediately on page load,
+before React ever rendered anything -- hence blank, not an error message
+on screen. Confirmed the env vars were present in Render's Settings
+*after* that first build, which fit the theory. Fixed with a
+"Clear build cache & deploy" (a fresh build now picking up the vars that
+were already there) rather than any code change -- this wasn't a bug in
+the app, just a one-time ordering issue between Blueprint sync and first
+build.
+
+After that: **confirmed working end-to-end at
+`https://app-workout-admin.onrender.com`** -- logged in as the coach
+(`atleta1@test.com`), Atletas page correctly shows
+`javiertortajada10@gmail.com` with "julio y el resto" as the active
+program and a working reassignment control. M5 is no longer just
+locally-verified; it's live and used by a real person.
 
 ---
 
