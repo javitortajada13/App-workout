@@ -1609,10 +1609,11 @@ silently falls back to the default track if the API doesn't support this
 for a given browser, or the video has no Spanish dub -- never a broken
 player. `exercise/[id].tsx` now renders this component (web only, same
 `Platform.OS === "web"` gate as before) instead of the plain iframe.
-**Not verified against a real device** -- same Supabase network block as
-everything else in this session; the user needs to check whether it
-actually auto-switches next time they open an exercise with a dub
-available.
+**Confirmed working by the user on a real device**: the hip-abduction
+exercise's video now plays in Spanish automatically, no manual gear-icon
+switch needed. The `getAvailableAudioTracks`/`setAudioTrack` approach
+works in practice, at least on Safari/iPadOS against a real dubbed
+video -- worth knowing next time this pattern is questioned.
 
 ---
 
