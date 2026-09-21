@@ -1219,6 +1219,28 @@ This is a small, safe first M6 step, not the milestone -- full nav polish
 `Profile -> Training -> Program -> Day/Session -> inline Blocks ->
 Exercise detail`) is unstarted.
 
+**2026-09-21 (cont.) — real user feedback on the exercise detail
+screen.** Two distinct pieces of feedback, treated differently:
+
+1. **Content order was wrong** (a real bug, not a taste call): the
+   screen showed "Por que" (the sports-science rationale) before "Como
+   hacerlo" (the coaching cues -- how to actually perform it) and before
+   equipment. An athlete mid-workout needs the video and the how-to
+   first; the why is secondary in that moment. Fixed immediately:
+   reordered to video -> "Como hacerlo" (renamed from "Claves de
+   coaching") -> equipment -> "Por que" -> physical qualities -> muscles
+   -> contraindications -> evidence -> sport transfer -> variations.
+2. **"No me gusta el diseño visual, no se ve bien"** -- this is the
+   exact thing Section 11 (contradiction #5) and the V1 decisions
+   explicitly deferred past this milestone: the app is still on
+   unbranded Expo defaults, not the dark/teal visual identity from the
+   design-preview artifact (see References). This is a legitimate,
+   real reaction, but revisiting the deferral is the user's call, not
+   something to act on unilaterally -- asked them directly whether to
+   prioritize it now (and offered the existing mockup as a starting
+   point) or keep deferring. Awaiting their answer before doing any
+   visual/styling work.
+
 ---
 
 ## References
