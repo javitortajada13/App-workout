@@ -1973,3 +1973,18 @@ Still NOT added: "Dumbbell rotational farmer's walk" and "Inertial
 farmer's walk" -- no photos or description came through for these two,
 still waiting on the coach to clarify before writing anything (same
 "never guess" rule).
+
+## 2026-09-22 -- TIMP library catalog: Dumbbell rotational farmer's walk added
+
+Confirmed by 4 real photos from the coach's own filming. Pattern
+confirmed visually: walking hip-hinge with dumbbells hanging low,
+transitioning every few steps into a front-rack-at-chest position before
+returning to the hinge -- "rotational" refers to the dumbbell path
+rotating between hang and rack, not trunk rotation. No public reference
+video was found showing that exact combined complex; linked a "DB
+Walking RDL" video for the hinge-and-walk half only, and said so
+explicitly in the exercise's coachingCues rather than presenting it as
+an exact match.
+
+Still NOT added: "Inertial farmer's walk" -- no photos/description yet,
+still waiting on the coach.
