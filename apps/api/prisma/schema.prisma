@@ -120,6 +120,7 @@ model Sport {
 model Program {
   id        String        @id @default(cuid())
   name      String
+  nameEn    String?
   startDate DateTime
   endDate   DateTime
   coachNote String?

@@ -2107,3 +2107,35 @@ Not done, flagged as follow-ups: translating
 `gym-banded-shoulder-external-rotation` (need its real Spanish text
 first) and the two existing programs' per-instance Spanish notes if a
 non-Spanish-speaking athlete is ever assigned one of them.
+
+## 2026-09-22 -- Language support: fixes from real-device feedback
+
+Coach tested the padel player's program in English and found 3 issues,
+all fixed:
+
+1. **"Dia 1"/"Dia 2" not translated for that program.** Root cause: the
+   original translation script matched `WHERE label = 'Dia 1'` (exact
+   string), and this program's session labels apparently differ from
+   that exact string (accent, casing, or whitespace -- can't know which
+   without querying production directly, which isn't done in this
+   workflow). Fixed properly rather than patched: switched to a regex
+   match (`label ~* '^d[ií]a\s*[0-9]+$'`) that handles "Dia 1", "Día 1",
+   "DIA 1", extra spaces, etc. -- self-healing, doesn't depend on
+   knowing the exact stored text. Verified locally against inserted rows
+   with all three variants before handing to the user.
+2. **"Mov Prep" renamed to "Calentamiento"** (coach's explicit
+   preference, not just a translation -- the Spanish base text itself
+   changed) with `labelEn` = "Warm-up" (already correct). Applies to
+   every program using that label.
+3. **Program.name needed an English variant that isn't a literal
+   translation** -- coach wants "Full Body + Shoulder Rehab" in English,
+   not a translation of the Spanish title (which keeps its "(jugador
+   padel)" framing intentionally, for the coach's own Spanish-side
+   reference). Added `Program.nameEn` (new migration), wired through
+   `loadProgramDetail` and `GET /me/programs` via the existing `pick()`
+   helper -- same pattern as every other translatable field.
+
+This is a good illustration of why the exact-string-match approach was
+risky for anything not authored within this session's own visibility:
+the fix is now robust to text variants going forward, not just patched
+for this one case.

@@ -99,7 +99,7 @@ export async function loadProgramDetail(
 
   return {
     id: program.id,
-    name: program.name,
+    name: pick(lang, program.name, program.nameEn),
     sportName: pick(lang, program.sport.name, program.sport.nameEn),
     startDate: program.startDate.toISOString(),
     endDate: program.endDate.toISOString(),

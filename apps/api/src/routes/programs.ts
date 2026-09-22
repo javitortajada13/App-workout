@@ -29,7 +29,7 @@ export function registerProgramRoutes(app: FastifyInstance) {
     });
     return programs.map((p) => ({
       id: p.id,
-      name: p.name,
+      name: pick(req.language, p.name, p.nameEn),
       sportName: pick(req.language, p.sport.name, p.sport.nameEn),
       startDate: p.startDate.toISOString(),
       endDate: p.endDate.toISOString(),
