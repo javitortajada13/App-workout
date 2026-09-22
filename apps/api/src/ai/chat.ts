@@ -1,11 +1,18 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage, ChatResponse } from "@app-workout/shared";
+import type { Lang } from "../auth.js";
 import { CHAT_TOOLS, getExerciseDetailTool, searchExercises } from "./tools.js";
 
 // The whole point: the model is a strength & conditioning coach that
 // explains and selects, grounded in the tools -- it never invents an
 // exercise fact, and it says so plainly when the evidence is thin.
-const SYSTEM_PROMPT = `Eres un entrenador experto en preparacion fisica y readiness para padel, trabajando dentro de una app que trata cada ejercicio como un objeto de conocimiento estructurado, no como una entrada de una libreria generica.
+// Written in Spanish (an internal instruction to the model, never shown to
+// the athlete) -- the reply-language line at the end is what actually
+// controls what the athlete sees. Tool results already come back in that
+// same language (see tools.ts / mappers.ts pick()), so the model isn't
+// translating on the fly -- it's reading and writing in one language per
+// turn.
+const SYSTEM_PROMPT_BASE = `Eres un entrenador experto en preparacion fisica y readiness para padel, trabajando dentro de una app que trata cada ejercicio como un objeto de conocimiento estructurado, no como una entrada de una libreria generica.
 
 Reglas que no puedes romper:
 - Nunca inventes ni recuerdes de memoria el objetivo, las contraindicaciones, o la evidencia de un ejercicio. Usa siempre "search_exercises" y "get_exercise_detail" para fundamentar cualquier afirmacion sobre un ejercicio concreto.
@@ -15,11 +22,26 @@ Reglas que no puedes romper:
 - Adapta la profundidad de tu explicacion al nivel del usuario -- no asumas que todos quieren la misma cantidad de detalle tecnico.
 - Se conciso y directo, como un entrenador real hablando con un jugador, no como un informe.`;
 
+const REPLY_LANGUAGE_INSTRUCTION: Record<Lang, string> = {
+  es: "\n\nResponde siempre en espanol, sea cual sea el idioma en el que escriba el usuario.",
+  en: "\n\nAlways reply in English, no matter what language the user writes in.",
+};
+
+const NO_ANSWER_FALLBACK: Record<Lang, string> = {
+  es: "No he podido generar una respuesta con la informacion disponible.",
+  en: "I wasn't able to generate a response with the information available.",
+};
+
 const MAX_ITERATIONS = 5;
 
-export async function runChat(apiKey: string, history: ChatMessage[]): Promise<ChatResponse> {
+export async function runChat(
+  apiKey: string,
+  history: ChatMessage[],
+  lang: Lang = "es",
+): Promise<ChatResponse> {
   const client = new Anthropic({ apiKey });
   const citedExerciseIds = new Set<string>();
+  const systemPrompt = SYSTEM_PROMPT_BASE + REPLY_LANGUAGE_INSTRUCTION[lang];
 
   const messages: Anthropic.MessageParam[] = history.map((m) => ({
     role: m.role,
@@ -32,7 +54,7 @@ export async function runChat(apiKey: string, history: ChatMessage[]): Promise<C
     const response = await client.messages.create({
       model: "claude-opus-5",
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       tools: CHAT_TOOLS,
       messages,
     });
@@ -53,12 +75,12 @@ export async function runChat(apiKey: string, history: ChatMessage[]): Promise<C
 
       let result: unknown;
       if (block.name === "search_exercises") {
-        const found = await searchExercises(block.input as Record<string, unknown>);
+        const found = await searchExercises(block.input as Record<string, unknown>, lang);
         for (const item of found) citedExerciseIds.add(item.id);
         result = found;
       } else if (block.name === "get_exercise_detail") {
         const input = block.input as { exerciseId: string };
-        result = await getExerciseDetailTool(input.exerciseId);
+        result = await getExerciseDetailTool(input.exerciseId, lang);
         citedExerciseIds.add(input.exerciseId);
       } else {
         result = { error: `Unknown tool: ${block.name}` };
@@ -76,7 +98,7 @@ export async function runChat(apiKey: string, history: ChatMessage[]): Promise<C
   return {
     message: {
       role: "assistant",
-      content: finalText || "No he podido generar una respuesta con la informacion disponible.",
+      content: finalText || NO_ANSWER_FALLBACK[lang],
     },
     citedExerciseIds: Array.from(citedExerciseIds),
   };

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
+import { createElement, useEffect, useState } from "react";
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ExerciseDetail } from "@app-workout/shared";
@@ -7,16 +7,11 @@ import type { ExerciseDetail } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { formatEvidence } from "@/lib/format";
 import { fetchExercise } from "@/lib/api";
-
-const LINK_LABEL: Record<string, string> = {
-  progression: "Progresion",
-  regression: "Regresion (mas facil)",
-  variation: "Variacion",
-  alternative: "Alternativa",
-};
+import { youtubeEmbedUrl } from "@/lib/video";
 
 function Chip({ label, sublabel }: { label: string; sublabel?: string }) {
   const theme = useTheme();
@@ -36,8 +31,8 @@ function Chip({ label, sublabel }: { label: string; sublabel?: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <ThemedView style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        {title.toUpperCase()}
+      <ThemedText type="label" themeColor="textSecondary">
+        {title}
       </ThemedText>
       {children}
     </ThemedView>
@@ -47,6 +42,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ExerciseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const { language, strings } = useLanguage();
   const router = useRouter();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +66,9 @@ export default function ExerciseScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <ThemedView style={styles.container}>
-          <ThemedText>No se pudo cargar el ejercicio: {error}</ThemedText>
+          <ThemedText>
+            {strings.exercise.loadError}: {error}
+          </ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
@@ -86,31 +84,93 @@ export default function ExerciseScreen() {
     );
   }
 
-  const evidenceLabel = formatEvidence(exercise.evidenceRating);
+  const evidenceLabel = formatEvidence(exercise.evidenceRating, language);
+  const embedUrl = exercise.videoUrl ? youtubeEmbedUrl(exercise.videoUrl) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          {exercise.name}
-        </ThemedText>
+        <ThemedText type="title">{exercise.name}</ThemedText>
 
-        <Section title="Por que">
+        {Platform.OS === "web" && embedUrl ? (
+          <ThemedView style={styles.videoBlock}>
+            <ThemedView style={styles.videoEmbed}>
+              {createElement("iframe", {
+                src: embedUrl,
+                style: { width: "100%", height: "100%", border: "none" },
+                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                allowFullScreen: true,
+                title: exercise.name,
+              })}
+            </ThemedView>
+            {/* YouTube sometimes shows a "sign in to confirm you're not a bot"
+                overlay inside the embed depending on the viewer's network/device
+                (a VPN, for example) -- our code can't detect or bypass that (the
+                iframe's content is cross-origin, invisible to us), so this
+                fallback link is always shown rather than conditionally, giving a
+                guaranteed way to watch the video without any troubleshooting. */}
+            <Pressable onPress={() => Linking.openURL(exercise.videoUrl!)}>
+              <ThemedText type="small" style={{ color: theme.accent, textAlign: "center" }}>
+                {strings.exercise.noVideo}
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
+        ) : (
+          exercise.videoUrl && (
+            <Pressable
+              onPress={() => Linking.openURL(exercise.videoUrl!)}
+              style={({ pressed }) => [
+                styles.videoButton,
+                { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+                {strings.exercise.watchVideo}
+              </ThemedText>
+            </Pressable>
+          )
+        )}
+
+        {exercise.coachingCues && (
+          <Section title={strings.exercise.howTo}>
+            <ThemedText>{exercise.coachingCues}</ThemedText>
+          </Section>
+        )}
+
+        {exercise.equipment.length > 0 && (
+          <Section title={strings.exercise.equipment}>
+            <ThemedView style={styles.chipRow}>
+              {exercise.equipment.map((e) => (
+                <Chip
+                  key={e.id}
+                  label={e.name}
+                  sublabel={e.required ? undefined : strings.exercise.optional}
+                />
+              ))}
+            </ThemedView>
+          </Section>
+        )}
+
+        <Section title={strings.exercise.why}>
           <ThemedText>{exercise.objective}</ThemedText>
         </Section>
 
         {exercise.physicalQualities.length > 0 && (
-          <Section title="Que entrena">
+          <Section title={strings.exercise.trains}>
             <ThemedView style={styles.chipRow}>
               {exercise.physicalQualities.map((q) => (
-                <Chip key={q.id} label={q.name} sublabel={q.emphasis === "secondary" ? "secundaria" : undefined} />
+                <Chip
+                  key={q.id}
+                  label={q.name}
+                  sublabel={q.emphasis === "secondary" ? strings.exercise.secondary : undefined}
+                />
               ))}
             </ThemedView>
           </Section>
         )}
 
         {exercise.muscles.length > 0 && (
-          <Section title="Musculos">
+          <Section title={strings.exercise.muscles}>
             <ThemedView style={styles.chipRow}>
               {exercise.muscles.map((m) => (
                 <Chip key={m.id} label={m.name} />
@@ -119,44 +179,33 @@ export default function ExerciseScreen() {
           </Section>
         )}
 
-        {exercise.equipment.length > 0 && (
-          <Section title="Equipamiento">
-            <ThemedView style={styles.chipRow}>
-              {exercise.equipment.map((e) => (
-                <Chip key={e.id} label={e.name} sublabel={e.required ? undefined : "opcional"} />
-              ))}
-            </ThemedView>
-          </Section>
-        )}
-
-        {exercise.coachingCues && (
-          <Section title="Claves de coaching">
-            <ThemedText>{exercise.coachingCues}</ThemedText>
-          </Section>
-        )}
-
         {exercise.contraindications && (
-          <Section title="Contraindicaciones">
-            <ThemedView style={[styles.warningBox, { borderColor: theme.text }]}>
+          <Section title={strings.exercise.contraindications}>
+            <ThemedView
+              style={[
+                styles.warningBox,
+                { backgroundColor: theme.warningBg, borderColor: theme.warningBorder },
+              ]}
+            >
               <ThemedText>{exercise.contraindications}</ThemedText>
             </ThemedView>
           </Section>
         )}
 
         {evidenceLabel && (
-          <Section title="Evidencia cientifica">
+          <Section title={strings.exercise.evidence}>
             <ThemedText>{evidenceLabel}</ThemedText>
           </Section>
         )}
 
         {exercise.sportTransfers.length > 0 && (
-          <Section title="Transferencia al deporte">
+          <Section title={strings.exercise.sportTransfer}>
             {exercise.sportTransfers.map((st, i) => (
               <ThemedView key={i} style={styles.transferRow}>
                 <ThemedText type="smallBold">{st.sportName}</ThemedText>
                 <ThemedText>{st.description}</ThemedText>
                 <ThemedText themeColor="textSecondary" type="small">
-                  {formatEvidence(st.evidenceRating)}
+                  {formatEvidence(st.evidenceRating, language)}
                 </ThemedText>
               </ThemedView>
             ))}
@@ -164,7 +213,7 @@ export default function ExerciseScreen() {
         )}
 
         {exercise.links.length > 0 && (
-          <Section title="Variaciones">
+          <Section title={strings.exercise.variations}>
             {exercise.links.map((link, i) => (
               <Pressable
                 key={i}
@@ -175,8 +224,8 @@ export default function ExerciseScreen() {
                 ]}
               >
                 <ThemedText type="smallBold">{link.exercise.name}</ThemedText>
-                <ThemedText themeColor="textSecondary" type="small">
-                  {LINK_LABEL[link.relationshipType] ?? link.relationshipType}
+                <ThemedText type="small" style={{ color: theme.accent, fontWeight: "700" }}>
+                  {strings.exercise.link[link.relationshipType] ?? link.relationshipType}
                 </ThemedText>
                 {link.rationale && (
                   <ThemedText themeColor="textSecondary" type="small">
@@ -200,11 +249,23 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     gap: Spacing.four,
   },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   section: { gap: Spacing.two },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
-  chip: { flexDirection: "row", borderRadius: Spacing.four, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  chip: { flexDirection: "row", borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   warningBox: { borderWidth: 1, borderRadius: Spacing.three, padding: Spacing.three },
+  videoButton: {
+    alignSelf: "flex-start",
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
+  videoBlock: { gap: Spacing.two },
+  videoEmbed: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    borderRadius: Spacing.three,
+    overflow: "hidden",
+  },
   transferRow: { gap: Spacing.half },
   linkRow: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
 });

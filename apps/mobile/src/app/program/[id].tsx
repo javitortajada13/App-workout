@@ -7,18 +7,14 @@ import type { ProgramDetail } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchProgram } from "@/lib/api";
-
-const ROLE_LABEL: Record<string, string> = {
-  warmup: "Calentamiento",
-  main: "Principal",
-  recovery: "Recuperacion",
-};
 
 export default function ProgramScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const { strings } = useLanguage();
   const router = useRouter();
   const [program, setProgram] = useState<ProgramDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,15 +36,17 @@ export default function ProgramScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ThemedView style={styles.container}>
-        {error && <ThemedText>No se pudo cargar el programa: {error}</ThemedText>}
+        {error && (
+          <ThemedText>
+            {strings.program.loadError}: {error}
+          </ThemedText>
+        )}
         {!error && !program && <ActivityIndicator color={theme.text} />}
 
         {program && (
           <>
-            <ThemedText type="title" style={styles.title}>
-              {program.name}
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
+            <ThemedText type="title">{program.name}</ThemedText>
+            <ThemedText themeColor="textSecondary" type="small">
               {program.sportName} · {new Date(program.startDate).toLocaleDateString()} -{" "}
               {new Date(program.endDate).toLocaleDateString()}
             </ThemedText>
@@ -69,14 +67,14 @@ export default function ProgramScreen() {
                     <ThemedText type="smallBold">{item.label}</ThemedText>
                     {item.role !== "main" && (
                       <ThemedText themeColor="textSecondary" type="small">
-                        {ROLE_LABEL[item.role] ?? item.role}
+                        {strings.program.role[item.role] ?? item.role}
                       </ThemedText>
                     )}
                   </ThemedView>
                   <ThemedText themeColor="textSecondary" type="small">
                     {item.blockCount === 0
-                      ? "Sin bloques todavia"
-                      : `${item.blockCount} bloques · ${item.exerciseCount} ejercicios`}
+                      ? strings.program.noBlocks
+                      : `${item.blockCount} ${strings.program.blocks} · ${item.exerciseCount} ${strings.program.exercises}`}
                   </ThemedText>
                 </Pressable>
               )}
@@ -91,7 +89,6 @@ export default function ProgramScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   list: { gap: Spacing.two, paddingTop: Spacing.two },
   row: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
   rowHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

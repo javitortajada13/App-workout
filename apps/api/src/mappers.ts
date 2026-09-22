@@ -2,15 +2,25 @@
 // REST routes and the AI tools import from here, so the AI sees exactly the
 // same exercise shape a client would -- one source of truth for "what an
 // exercise looks like once it leaves the database."
-import type {
-  ExerciseDetail,
-  ProgramDetail,
-  ProgramSummary,
-  SessionDetail,
-} from "@app-workout/shared";
+import type { ExerciseDetail, ProgramDetail, SessionDetail } from "@app-workout/shared";
+import type { Lang } from "./auth.js";
 import { prisma } from "./db.js";
 
-export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | null> {
+// Every translatable field is a same-shape pair: the Spanish original
+// (never null) and an optional English translation. In "en" mode we use
+// the translation only if one actually exists -- an exercise that hasn't
+// been translated yet still reads correctly in Spanish rather than
+// showing a blank field. See PROJECT_STATE.md, language-support entry.
+export function pick(lang: Lang, es: string, en: string | null): string;
+export function pick(lang: Lang, es: string | null, en: string | null): string | null;
+export function pick(lang: Lang, es: string | null, en: string | null): string | null {
+  return lang === "en" && en ? en : es;
+}
+
+export async function loadExerciseDetail(
+  id: string,
+  lang: Lang = "es",
+): Promise<ExerciseDetail | null> {
   const exercise = await prisma.exercise.findUnique({
     where: { id },
     include: {
@@ -25,64 +35,56 @@ export async function loadExerciseDetail(id: string): Promise<ExerciseDetail | n
 
   return {
     id: exercise.id,
-    name: exercise.name,
+    name: pick(lang, exercise.name, exercise.nameEn),
     videoUrl: exercise.videoUrl,
     thumbnailUrl: exercise.thumbnailUrl,
-    objective: exercise.objective,
-    movementComplexity: exercise.movementComplexity,
-    contraindications: exercise.contraindications,
-    coachingCues: exercise.coachingCues,
+    aliases: exercise.aliases,
+    objective: pick(lang, exercise.objective, exercise.objectiveEn),
+    description: pick(lang, exercise.description, exercise.descriptionEn),
+    movementComplexity: pick(lang, exercise.movementComplexity, exercise.movementComplexityEn),
+    contraindications: pick(lang, exercise.contraindications, exercise.contraindicationsEn),
+    coachingCues: pick(lang, exercise.coachingCues, exercise.coachingCuesEn),
     evidenceRating: exercise.evidenceRating,
     physicalQualities: exercise.physicalQualities.map((pq) => ({
       id: pq.quality.id,
-      name: pq.quality.name,
+      name: pick(lang, pq.quality.name, pq.quality.nameEn),
       emphasis: pq.emphasis,
     })),
     muscles: exercise.muscles.map((m) => ({
       id: m.muscle.id,
-      name: m.muscle.name,
-      muscleGroup: m.muscle.muscleGroup,
+      name: pick(lang, m.muscle.name, m.muscle.nameEn),
+      muscleGroup: pick(lang, m.muscle.muscleGroup, m.muscle.muscleGroupEn),
       emphasis: m.emphasis,
     })),
     equipment: exercise.equipment.map((eq) => ({
       id: eq.equipment.id,
-      name: eq.equipment.name,
+      name: pick(lang, eq.equipment.name, eq.equipment.nameEn),
       required: eq.required,
     })),
     links: exercise.linksFrom.map((l) => ({
+      id: l.id,
       relationshipType: l.relationshipType,
-      rationale: l.rationale,
+      rationale: pick(lang, l.rationale, l.rationaleEn),
       exercise: {
         id: l.toExercise.id,
-        name: l.toExercise.name,
+        name: pick(lang, l.toExercise.name, l.toExercise.nameEn),
         videoUrl: l.toExercise.videoUrl,
         thumbnailUrl: l.toExercise.thumbnailUrl,
       },
     })),
     sportTransfers: exercise.sportTransfers.map((st) => ({
-      sportName: st.sport.name,
-      description: st.description,
+      id: st.id,
+      sportName: pick(lang, st.sport.name, st.sport.nameEn),
+      description: pick(lang, st.description, st.descriptionEn),
       evidenceRating: st.evidenceRating,
     })),
   };
 }
 
-export async function loadProgramSummaries(): Promise<ProgramSummary[]> {
-  const programs = await prisma.program.findMany({
-    include: { sport: true, sessions: { select: { id: true } } },
-    orderBy: { startDate: "desc" },
-  });
-  return programs.map((p) => ({
-    id: p.id,
-    name: p.name,
-    sportName: p.sport.name,
-    startDate: p.startDate.toISOString(),
-    endDate: p.endDate.toISOString(),
-    dayCount: p.sessions.length,
-  }));
-}
-
-export async function loadProgramDetail(id: string): Promise<ProgramDetail | null> {
+export async function loadProgramDetail(
+  id: string,
+  lang: Lang = "es",
+): Promise<ProgramDetail | null> {
   const program = await prisma.program.findUnique({
     where: { id },
     include: {
@@ -97,14 +99,14 @@ export async function loadProgramDetail(id: string): Promise<ProgramDetail | nul
 
   return {
     id: program.id,
-    name: program.name,
-    sportName: program.sport.name,
+    name: pick(lang, program.name, program.nameEn),
+    sportName: pick(lang, program.sport.name, program.sport.nameEn),
     startDate: program.startDate.toISOString(),
     endDate: program.endDate.toISOString(),
     dayCount: program.sessions.length,
     sessions: program.sessions.map((s) => ({
       id: s.id,
-      label: s.label,
+      label: pick(lang, s.label, s.labelEn),
       order: s.order,
       role: s.role,
       blockCount: s.blocks.length,
@@ -113,7 +115,10 @@ export async function loadProgramDetail(id: string): Promise<ProgramDetail | nul
   };
 }
 
-export async function loadSessionDetail(id: string): Promise<SessionDetail | null> {
+export async function loadSessionDetail(
+  id: string,
+  lang: Lang = "es",
+): Promise<SessionDetail | null> {
   const session = await prisma.session.findUnique({
     where: { id },
     include: {
@@ -132,7 +137,7 @@ export async function loadSessionDetail(id: string): Promise<SessionDetail | nul
 
   return {
     id: session.id,
-    label: session.label,
+    label: pick(lang, session.label, session.labelEn),
     order: session.order,
     role: session.role,
     blockCount: session.blocks.length,
@@ -142,7 +147,7 @@ export async function loadSessionDetail(id: string): Promise<SessionDetail | nul
       order: b.order,
       blockType: b.blockType,
       rounds: b.rounds,
-      purpose: b.purpose,
+      purpose: pick(lang, b.purpose, b.purposeEn),
       exercises: b.exercises.map((be) => ({
         id: be.id,
         order: be.order,
@@ -152,10 +157,10 @@ export async function loadSessionDetail(id: string): Promise<SessionDetail | nul
         load: be.load,
         tempo: be.tempo,
         rest: be.rest,
-        instanceNote: be.instanceNote,
+        instanceNote: pick(lang, be.instanceNote, be.instanceNoteEn),
         exercise: {
           id: be.exercise.id,
-          name: be.exercise.name,
+          name: pick(lang, be.exercise.name, be.exercise.nameEn),
           videoUrl: be.exercise.videoUrl,
           thumbnailUrl: be.exercise.thumbnailUrl,
         },

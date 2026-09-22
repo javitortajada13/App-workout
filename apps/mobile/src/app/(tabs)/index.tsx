@@ -2,24 +2,26 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
-import type { ProgramSummary } from "@app-workout/shared";
+import type { MyProgramSummary } from "@app-workout/shared";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
-import { fetchPrograms } from "@/lib/api";
+import { fetchMyPrograms } from "@/lib/api";
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const router = useRouter();
-  const [programs, setPrograms] = useState<ProgramSummary[] | null>(null);
+  const [programs, setPrograms] = useState<MyProgramSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      fetchPrograms()
+      fetchMyPrograms()
         .then((data) => {
           if (!cancelled) setPrograms(data);
         })
@@ -37,16 +39,16 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Hola
-        </ThemedText>
+        <ThemedText type="title">{strings.home.greeting}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          Tu coach de preparacion fisica para padel
+          {strings.home.subtitle}
         </ThemedText>
 
         {error && (
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText>No se pudo conectar con el servidor: {error}</ThemedText>
+            <ThemedText>
+              {strings.home.connectionError}: {error}
+            </ThemedText>
           </ThemedView>
         )}
 
@@ -61,18 +63,18 @@ export default function HomeScreen() {
             ]}
           >
             <ThemedText themeColor="textSecondary" type="small">
-              Programa actual
+              {strings.home.currentProgram}
             </ThemedText>
             <ThemedText type="subtitle">{current.name}</ThemedText>
             <ThemedText themeColor="textSecondary">
-              {current.dayCount} sesiones · {current.sportName}
+              {current.dayCount} {strings.home.sessionsCount} · {current.sportName}
             </ThemedText>
           </Pressable>
         )}
 
         {programs?.length === 0 && (
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText>Todavia no hay programas asignados.</ThemedText>
+            <ThemedText>{strings.home.noProgram}</ThemedText>
           </ThemedView>
         )}
 
@@ -80,11 +82,11 @@ export default function HomeScreen() {
           onPress={() => router.push("/(tabs)/coach")}
           style={({ pressed }) => [
             styles.coachButton,
-            { backgroundColor: theme.text, opacity: pressed ? 0.8 : 1 },
+            { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
           ]}
         >
-          <ThemedText style={{ color: theme.background }} type="smallBold">
-            Preguntale al coach
+          <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+            {strings.home.askCoach}
           </ThemedText>
         </Pressable>
       </ThemedView>
@@ -100,7 +102,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
     gap: Spacing.three,
   },
-  title: { textAlign: "left" },
   subtitle: { marginTop: -Spacing.two },
   card: {
     borderRadius: Spacing.three,

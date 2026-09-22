@@ -47,6 +47,54 @@ enum EvidenceRating {
   insufficient
 }
 
+enum UserRole {
+  coach
+  athlete
+}
+
+// An athlete can have multiple programs over time, but normally only one
+// ACTIVE program at a time -- programs are never deleted or overwritten,
+// just archived when a new one replaces them. "draft" exists for a program
+// a coach is still building (see M4) that shouldn't show up for the athlete
+// yet.
+enum ProgramStatus {
+  draft
+  active
+  archived
+}
+
+// Identity lives in Supabase Auth (auth.users) -- this table is the app-side
+// profile, linked by id (the Supabase user's uuid). We never store or manage
+// passwords here. V1 has exactly one coach; role is an enum rather than a
+// separate Coach/Athlete table so adding more coaches later doesn't require
+// a schema migration, just more rows with role = coach.
+model Profile {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  name         String?
+  role         UserRole @default(athlete)
+  // Deliberately a plain field, no structure or adaptive logic behind it yet
+  // -- see PROJECT_STATE.md section 13.
+  athleteLevel String?
+  // Display language for this person's own app + AI coach replies -- "es"
+  // or "en" for now (see PROJECT_STATE.md, the Saran/language-support
+  // entry). Never affects what a coach sees about other athletes; purely
+  // a per-person reading preference.
+  language     String   @default("es")
+  // Coach-only free text: medical history, functional test notes, sport(s),
+  // load-progression philosophy for this athlete. Never shown to the
+  // athlete themselves -- read by the coach (or whoever is building this
+  // athlete's program, including a human reasoning over it in a Claude Code
+  // session) before creating or adjusting a program. Deliberately unstructured
+  // for the same reason athleteLevel is: no adaptive logic reads this yet.
+  coachNotes   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  programsAsAthlete Program[] @relation("AthletePrograms")
+  programsAsCoach   Program[] @relation("CoachPrograms")
+}
+
 // A sport is a first-class entity from day one, even though "padel" is the
 // only row for a long while — the exercise graph, physical qualities, and
 // sport-transfer claims are all designed to generalize across sports; only
@@ -54,24 +102,38 @@ enum EvidenceRating {
 model Sport {
   id        String          @id @default(cuid())
   name      String          @unique
+  // English display name, filled in as content gets translated (see
+  // PROJECT_STATE.md, language-support entry). Null means "not translated
+  // yet" -- callers fall back to `name`, never leave a blank string.
+  nameEn    String?
   programs  Program[]
   transfers SportTransfer[]
 }
 
-// A periodized block of training assigned to an athlete. Athlete/coach
-// identity is deliberately not modeled yet (no auth/users in this pass) —
-// coachNote is a placeholder for program-level intent until that layer exists.
+// A periodized block of training assigned to an athlete. athleteId/coachId
+// are nullable because existing seeded programs predate auth and have no
+// owner yet -- assigning one is a deliberate action (see
+// routes/athletes.ts), not something a migration should guess at. status
+// defaults to "active" so an unassigned legacy program keeps behaving
+// exactly as it did before this field existed; it only matters once a
+// route actually filters by it.
 model Program {
-  id        String    @id @default(cuid())
+  id        String        @id @default(cuid())
   name      String
+  nameEn    String?
   startDate DateTime
   endDate   DateTime
   coachNote String?
-  sport     Sport     @relation(fields: [sportId], references: [id])
+  status    ProgramStatus @default(active)
+  sport     Sport         @relation(fields: [sportId], references: [id])
   sportId   String
+  athlete   Profile?      @relation("AthletePrograms", fields: [athleteId], references: [id])
+  athleteId String?       @db.Uuid
+  coach     Profile?      @relation("CoachPrograms", fields: [coachId], references: [id])
+  coachId   String?       @db.Uuid
   sessions  Session[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 // A training day. "role" captures the shared Mov Prep pattern directly:
@@ -80,6 +142,7 @@ model Program {
 model Session {
   id        String      @id @default(cuid())
   label     String
+  labelEn   String?
   order     Int
   role      SessionRole @default(main)
   program   Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
@@ -98,6 +161,8 @@ model Block {
   blockType BlockType       @default(straight)
   rounds    Int?
   purpose   String?
+  // English translation of `purpose`, filled in per-program as needed.
+  purposeEn String?
   session   Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId String
   exercises BlockExercise[]
@@ -117,6 +182,8 @@ model BlockExercise {
   tempo            String?
   rest             String?
   instanceNote     String?
+  // English translation of `instanceNote`, filled in per-program as needed.
+  instanceNoteEn   String?
   block            Block             @relation(fields: [blockId], references: [id], onDelete: Cascade)
   blockId          String
   exercise         Exercise          @relation(fields: [exerciseId], references: [id])
@@ -141,6 +208,19 @@ model Exercise {
   evidenceRating     EvidenceRating?
   videoUrl           String?
   thumbnailUrl       String?
+  // English translations of the fields above, filled in as content gets
+  // translated (see PROJECT_STATE.md, language-support entry). All
+  // nullable and independent -- a partially-translated exercise falls
+  // back to the Spanish field per-field, never shows a blank string.
+  // Translated by a human/coach-reviewed pass, not machine-translated at
+  // request time -- this repo's "never invent an exercise fact" rule
+  // applies to contraindicationsEn just as much as to contraindications.
+  nameEn               String?
+  objectiveEn          String?
+  descriptionEn        String?
+  movementComplexityEn String?
+  contraindicationsEn  String?
+  coachingCuesEn       String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -156,6 +236,7 @@ model Exercise {
 model PhysicalQuality {
   id        String                    @id @default(cuid())
   name      String                    @unique
+  nameEn    String?
   exercises ExercisePhysicalQuality[]
 }
 
@@ -170,10 +251,12 @@ model ExercisePhysicalQuality {
 }
 
 model Muscle {
-  id          String           @id @default(cuid())
-  name        String           @unique
-  muscleGroup String?
-  exercises   ExerciseMuscle[]
+  id            String           @id @default(cuid())
+  name          String           @unique
+  nameEn        String?
+  muscleGroup   String?
+  muscleGroupEn String?
+  exercises     ExerciseMuscle[]
 }
 
 model ExerciseMuscle {
@@ -189,6 +272,7 @@ model ExerciseMuscle {
 model Equipment {
   id        String              @id @default(cuid())
   name      String              @unique
+  nameEn    String?
   exercises ExerciseEquipment[]
 }
 
@@ -209,6 +293,7 @@ model ExerciseLink {
   id               String           @id @default(cuid())
   relationshipType ExerciseLinkType
   rationale        String?
+  rationaleEn      String?
   fromExercise     Exercise         @relation("LinkFrom", fields: [fromExerciseId], references: [id], onDelete: Cascade)
   fromExerciseId   String
   toExercise       Exercise         @relation("LinkTo", fields: [toExerciseId], references: [id], onDelete: Cascade)
@@ -223,6 +308,7 @@ model ExerciseLink {
 model SportTransfer {
   id             String         @id @default(cuid())
   description    String
+  descriptionEn  String?
   evidenceRating EvidenceRating
   exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   exerciseId     String

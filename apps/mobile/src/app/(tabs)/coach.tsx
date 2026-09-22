@@ -14,11 +14,13 @@ import type { ChatMessage } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { sendChatMessage } from "@/lib/api";
 
 export default function CoachScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -35,10 +37,7 @@ export default function CoachScreen() {
       const response = await sendChatMessage(next);
       setMessages([...next, response.message]);
     } catch {
-      setMessages([
-        ...next,
-        { role: "assistant", content: "No se pudo contactar con el coach. Intentalo de nuevo." },
-      ]);
+      setMessages([...next, { role: "assistant", content: strings.coach.error }]);
     } finally {
       setSending(false);
     }
@@ -56,11 +55,8 @@ export default function CoachScreen() {
           contentContainerStyle={styles.messages}
           ListEmptyComponent={
             <ThemedView style={styles.emptyState}>
-              <ThemedText type="subtitle">Preguntale al coach</ThemedText>
-              <ThemedText themeColor="textSecondary">
-                "Por que hago este ejercicio?" · "Me duele el hombro" · "Solo tengo bandas" ·
-                "Hazme hoy mas facil el entreno"
-              </ThemedText>
+              <ThemedText type="subtitle">{strings.coach.emptyTitle}</ThemedText>
+              <ThemedText themeColor="textSecondary">{strings.coach.emptyExamples}</ThemedText>
             </ThemedView>
           }
           renderItem={({ item }) => (
@@ -77,7 +73,7 @@ export default function CoachScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Escribe tu pregunta..."
+            placeholder={strings.coach.placeholder}
             placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.text }]}
             multiline
@@ -87,11 +83,11 @@ export default function CoachScreen() {
             disabled={sending || !input.trim()}
             style={({ pressed }) => [
               styles.sendButton,
-              { backgroundColor: theme.text, opacity: pressed || sending || !input.trim() ? 0.5 : 1 },
+              { backgroundColor: theme.accent, opacity: pressed || sending || !input.trim() ? 0.5 : 1 },
             ]}
           >
-            <ThemedText style={{ color: theme.background }} type="smallBold">
-              Enviar
+            <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+              {strings.coach.send}
             </ThemedText>
           </Pressable>
         </ThemedView>

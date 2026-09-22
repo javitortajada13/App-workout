@@ -1,12 +1,18 @@
 import type { BlockExerciseSummary, EvidenceRating } from "@app-workout/shared";
+import type { Lang } from "./i18n";
+import { STRINGS } from "./i18n";
 
-export function formatPrescription(be: Pick<BlockExerciseSummary, "prescriptionType" | "repsOrDuration" | "sets">) {
+export function formatPrescription(
+  be: Pick<BlockExerciseSummary, "prescriptionType" | "repsOrDuration" | "sets">,
+  lang: Lang = "es",
+) {
+  const t = STRINGS[lang].prescription;
   const setsPrefix = be.sets ? `${be.sets} x ` : "";
   switch (be.prescriptionType) {
     case "reps":
-      return `${setsPrefix}${be.repsOrDuration} reps`;
+      return `${setsPrefix}${be.repsOrDuration} ${t.reps}`;
     case "reps_per_side":
-      return `${setsPrefix}${be.repsOrDuration} (por lado)`;
+      return `${setsPrefix}${be.repsOrDuration} ${t.perSide}`;
     case "distance":
     case "time":
     default:
@@ -14,15 +20,7 @@ export function formatPrescription(be: Pick<BlockExerciseSummary, "prescriptionT
   }
 }
 
-const EVIDENCE_LABEL: Record<EvidenceRating, string> = {
-  strong: "Evidencia solida",
-  moderate: "Evidencia moderada",
-  limited: "Evidencia limitada",
-  conflicting: "Evidencia conflictiva",
-  insufficient: "Evidencia insuficiente",
-};
-
-export function formatEvidence(rating: EvidenceRating | null) {
+export function formatEvidence(rating: EvidenceRating | null, lang: Lang = "es") {
   if (!rating) return null;
-  return EVIDENCE_LABEL[rating];
+  return STRINGS[lang].evidence[rating];
 }

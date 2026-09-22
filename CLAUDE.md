@@ -4,6 +4,13 @@ An AI-powered strength & conditioning platform, starting with padel. Read
 this before making architectural changes — it captures decisions that
 aren't obvious from the code alone.
 
+Before making changes, also read `PROJECT_STATE.md` at the repo root — a
+point-in-time reconstruction of what's implemented vs. only documented,
+open contradictions between artifacts and this file, and known gaps. It's a
+snapshot, not a living doc — treat any conflict with the actual code as the
+code winning, and re-verify rather than trusting it blindly as the codebase
+evolves.
+
 ## The philosophy this project is built on
 
 This is not an exercise library with a chatbot bolted on. The exercise
