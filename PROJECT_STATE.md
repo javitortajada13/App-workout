@@ -2198,3 +2198,26 @@ Render's own `prisma migrate deploy` apply them (i.e. don't pre-apply the
 ALTER TABLE by hand at all, just deploy the code and let the startCommand
 run it), or (b) if pre-applied by hand for any reason, immediately be
 paired with a `_prisma_migrations` bookkeeping fix like this one.
+
+## 2026-09-22 -- Language-dependent responses were getting cached, showing stale Spanish
+
+After the API deploy finally succeeded and the DB content was confirmed
+correct (verified with a direct `?lang=en` request to the API, which
+returned everything correctly in English), the mobile app was still
+showing Spanish data for the same program even though the coach's own
+Profile.language was confirmed "en" (Profile tab showed the toggle
+correctly highlighted, GET /me round-tripped correctly). Diagnosis: the
+mobile app's plain `GET /programs/:id` (no `?lang=` -- it relies on the
+bearer token to resolve language server-side, see auth.ts attachLanguage)
+is the exact same URL regardless of the caller's language, so nothing in
+the URL itself changes when someone switches language. Without an
+explicit no-cache directive, a browser (this was on Safari/iPadOS) can
+serve back a stale response cached from before the language switch.
+Fixed on both ends: `Cache-Control: no-store` added to every response
+from `authenticate`/`attachLanguage`-gated routes (apps/api/src/auth.ts),
+plus `cache: "no-store"` on the mobile client's own fetch calls
+(apps/mobile/src/lib/api.ts) as defense-in-depth. Confirmed via the
+direct-URL test (which bypassed the app's cached URL and used a
+distinct, never-before-requested URL with `?lang=en`) that the data and
+server logic were already correct -- this was purely a caching bug, not
+a data or resolution bug.

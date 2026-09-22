@@ -65,6 +65,14 @@ async function verifyBearerToken(req: FastifyRequest) {
 }
 
 export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
+  // The same URL (e.g. GET /me) returns different content depending on
+  // the caller's own Profile.language, but a plain GET has nothing in the
+  // URL to vary the cache key by -- without this, a browser (Safari in
+  // particular) can serve a stale, wrong-language response after someone
+  // switches languages. See PROJECT_STATE.md, "language response caching"
+  // entry: this was a real, confusing bug in production, not a guess.
+  reply.header("Cache-Control", "no-store");
+
   const claims = await verifyBearerToken(req);
   if (!claims) {
     return reply.code(401).send({ error: "Missing or invalid bearer token" });
@@ -81,7 +89,11 @@ export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
 // second, separate token check from `authenticate` on purpose -- these
 // routes don't require login, so we can't reuse a hook that 401s without
 // one.
-export async function attachLanguage(req: FastifyRequest) {
+export async function attachLanguage(req: FastifyRequest, reply: FastifyReply) {
+  // Same reasoning as the no-store header in `authenticate` above -- these
+  // routes' content depends on the caller's language too.
+  reply.header("Cache-Control", "no-store");
+
   const claims = await verifyBearerToken(req);
   if (claims) {
     const profile = await prisma.profile.findUnique({ where: { id: claims.supabaseId } });

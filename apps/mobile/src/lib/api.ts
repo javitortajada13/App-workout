@@ -19,7 +19,12 @@ async function authHeaders(): Promise<HeadersInit> {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { headers: await authHeaders() });
+  // no-store: these responses vary by the caller's Profile.language, which
+  // isn't part of the URL -- without this, a browser can serve back a
+  // stale, wrong-language response cached from before a language switch
+  // (confirmed on a real device: the API's own Cache-Control header,
+  // apps/api/src/auth.ts, is the primary fix, this is defense-in-depth).
+  const res = await fetch(`${API_URL}${path}`, { headers: await authHeaders(), cache: "no-store" });
   if (!res.ok) {
     throw new Error(`API error ${res.status} on ${path}`);
   }
@@ -31,6 +36,7 @@ async function patch<T>(path: string, body: unknown): Promise<T> {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify(body),
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error(`API error ${res.status} on ${path}`);
@@ -82,6 +88,7 @@ export async function sendChatMessage(messages: ChatMessage[]): Promise<ChatResp
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ messages }),
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new Error(`Chat API error ${res.status}`);
