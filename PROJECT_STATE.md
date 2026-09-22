@@ -2004,3 +2004,13 @@ standard technique asks for the opposite.
 This closes out the TIMP "sept 2" exercise-library catalog task (4
 batches total, ~20 exercises added across all of them). Nothing from
 those screenshots remains unconfirmed.
+
+## 2026-09-22 -- Staggered Rack Pull: added a video
+
+Coach sent 2 real photos confirming the "Rack pull en posicion staggered"
+setup exactly matches what was described (barbell on rack pins, staggered
+stance). Coach asked to add a video anyway even though no exact match
+exists -- used a real "Staggered Stance Hex Bar Deadlift" video, which
+shows the same staggered-leg positioning but from the floor with a hex
+bar rather than from the rack pins. Applied via `UPDATE ... WHERE name =`
+since the exercise row already exists from the batch-2 script.
