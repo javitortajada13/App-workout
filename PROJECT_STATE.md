@@ -2163,3 +2163,38 @@ screenshot) and translated the padel player program's Mov Prep
 `Block.purpose`/`BlockExercise.instanceNote` (previously deprioritized as
 lower-value since that athlete is Spanish-speaking -- reversed once the
 coach was actually looking at it in English).
+
+## 2026-09-22 -- API deploy failing: Prisma migration tracking out of sync
+
+Root cause found and fixed. The API's Render `startCommand` runs
+`prisma migrate deploy` on every deploy/restart. The 3 language-support
+migrations were applied to production by having the coach paste their
+`ALTER TABLE` SQL directly into Supabase's SQL editor (this session's
+usual workflow for schema changes) rather than through `prisma migrate
+deploy` itself -- so Prisma's own bookkeeping table
+(`_prisma_migrations`) never got a record of them. On the next deploy,
+`prisma migrate deploy` tried to re-apply those same migrations, hit
+`column already exists` (error P3018), and left a **failed** migration
+record behind -- which blocks every subsequent deploy until resolved,
+not just that one attempt.
+
+Reproduced exactly in local dev (deleted the 3 migration rows from
+`_prisma_migrations`, ran `prisma migrate deploy`, got the identical
+P3018 "already exists" error with a stuck failed record) before writing
+the fix, and verified the fix resolves it (`prisma migrate deploy`
+reports "No pending migrations to apply" afterward). Fix: a SQL script
+that deletes any partial/failed record for those 3 migration names and
+inserts clean "applied" rows with the real SHA-256 checksums of each
+migration.sql file (computed locally with `sha256sum`, matching what
+`prisma migrate resolve --applied` would compute) -- this only touches
+Prisma's internal tracking table, never the app's own data.
+
+**Process lesson for future schema changes**: giving the coach raw
+`ALTER TABLE` SQL to paste (fine for the many earlier *content* scripts,
+`INSERT`/`UPDATE` by name) is NOT fine for *schema* migrations specifically,
+since this app's deploy pipeline auto-runs `prisma migrate deploy`. Going
+forward, schema migrations should either (a) be deployed by letting
+Render's own `prisma migrate deploy` apply them (i.e. don't pre-apply the
+ALTER TABLE by hand at all, just deploy the code and let the startCommand
+run it), or (b) if pre-applied by hand for any reason, immediately be
+paired with a `_prisma_migrations` bookkeeping fix like this one.
