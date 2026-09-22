@@ -1874,6 +1874,51 @@ local dev data via a throwaway `tsx` script (real session/block/exercise
 counts, `coachNote` present) -- couldn't hit it over HTTP since a real
 coach JWT isn't available in this sandbox.
 
+### Padel player program reworked: shoulder-first, not full-body (2026-09-22)
+
+The user reviewed the first draft (full-body + shoulder rehab) in the
+admin app and corrected the whole approach: this client wants shoulder
+recovery *now*, not general conditioning -- and he has zero training
+background, so anything resembling a normal full-body program would
+feel overwhelming. Explicit brief: heavy shoulder/scapular focus
+(named "trapecio medio" specifically, for scapular repositioning), a
+little lumbar (kinetic-chain connection), almost no leg work (no leg
+issues), and simple (5 exercises/session, not 6 with varied blocks).
+Also explicitly said not to feel limited to existing DB exercises --
+new ones are fine, and the user is separately adding their own to the
+system too.
+
+Added 3 new exercises (all real videos, found via search): `gym-
+banded-shoulder-internal-rotation` (complements the external rotation
+already added -- balanced rotator cuff work), `gym-band-face-pull`
+(mid trap + rear delt, a standard "reposition the shoulder" exercise),
+`gym-band-y-raise` (lower trap + serratus anterior, scapular upward
+rotation -- also standard rehab). Added `Serrato anterior` to the
+`Muscle` taxonomy for the last one.
+
+Rebuilt Mov Prep / Dia 1 / Dia 2 to drop essentially all leg-specific
+and footwork content (monster-walk-style patterns, split squats, step-
+ups, kettlebell swing, farmer's walk, footwork drills) -- none of that
+matched "almost no legs, keep it simple." New structure: Mov Prep (2
+items) + each day 5 exercises, all but one of them shoulder/scapular,
+one light core-lumbar touch, one light general stretch. `Program.
+coachNote` updated in place to record why (so a future session doesn't
+wonder why the second version looks so different from the first).
+
+SQL: `/tmp/.../scratchpad/rework-padel-player-shoulder-focus.sql`.
+Structured as an in-place rework, not a new program: adds the 3 new
+exercises, `DELETE`s the old `Block` rows for this program's 3
+sessions (cascades to their `BlockExercise` rows), inserts the new
+simplified structure, updates `coachNote`. Verified locally by running
+the *original* creation script followed by this rework script in one
+transaction (rolled back) -- confirms it applies cleanly on top of
+already-existing production state, not just a fresh DB. Caught and
+fixed one real bug in the process: this script referenced `'Marcha en
+el sitio'` by name assuming the father's Mov Prep script had already
+created it in production, which was never actually confirmed -- added
+that exercise's own idempotent `INSERT ... ON CONFLICT DO NOTHING`
+directly into this script so it doesn't depend on that assumption.
+
 ---
 
 ## References
