@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import type { Session } from "@supabase/supabase-js";
 
 import { ThemedView } from "@/components/themed-view";
+import { LanguageProvider, useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMe } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +18,16 @@ import { supabase } from "@/lib/supabase";
 // screens should exist, leaving the previous (tabs) content on screen.
 // Stack.Protected exists specifically to handle that transition correctly.
 export default function RootLayout() {
+  return (
+    <LanguageProvider>
+      <RootLayoutNav />
+    </LanguageProvider>
+  );
+}
+
+function RootLayoutNav() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   useEffect(() => {
@@ -68,9 +78,9 @@ export default function RootLayout() {
     >
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="program/[id]" options={{ title: "Programa" }} />
-        <Stack.Screen name="session/[id]" options={{ title: "Sesion" }} />
-        <Stack.Screen name="exercise/[id]" options={{ title: "Ejercicio" }} />
+        <Stack.Screen name="program/[id]" options={{ title: strings.stack.program }} />
+        <Stack.Screen name="session/[id]" options={{ title: strings.stack.session }} />
+        <Stack.Screen name="exercise/[id]" options={{ title: strings.stack.exercise }} />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" options={{ headerShown: false }} />

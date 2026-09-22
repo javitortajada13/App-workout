@@ -2014,3 +2014,96 @@ exists -- used a real "Staggered Stance Hex Bar Deadlift" video, which
 shows the same staggered-leg positioning but from the floor with a hex
 bar rather than from the rack pins. Applied via `UPDATE ... WHERE name =`
 since the exercise row already exists from the batch-2 script.
+
+## 2026-09-22 -- Language support (Spanish/English) for athletes
+
+Built the full stack for per-athlete language preference, triggered by
+Saran (Thai, English-speaking) needing the app in English while the
+father needs it in Spanish. Two deliberately separate layers, per a
+decision the user made explicitly when asked:
+
+**Layer 1 -- UI chrome (buttons, labels, screens, AI coach chat).** Fully
+built, no scope cut:
+- `Profile.language` (`"es" | "en"`, default `"es"`) -- new column,
+  migration `20260922110102_add_language_support`.
+- `apps/api/src/auth.ts`: `authenticate` now also resolves
+  `req.language` from the verified Profile. New `attachLanguage` --
+  a best-effort, never-401 sibling hook for the routes that stay public
+  (exercise/session/program detail, `/exercises` list, `/chat`) -- tries
+  the bearer token, falls back to `?lang=`, falls back to `"es"`.
+- `PATCH /me` (self-service, athlete's own token) lets the app set its
+  own language -- separate from the coach-only `PATCH /athletes/:id`.
+- `apps/api/src/mappers.ts`: new `pick(lang, es, en)` helper, exported;
+  every translatable field in `loadExerciseDetail`/`loadProgramDetail`/
+  `loadSessionDetail` now resolves through it, falling back to Spanish
+  per-field if that field hasn't been translated yet -- never a blank
+  string.
+- AI coach (`apps/api/src/ai/chat.ts`, `tools.ts`): tool results come
+  back in the resolved language, and the system prompt gets one appended
+  line telling the model to always reply in that language regardless of
+  what the athlete types. Tool descriptions/internal reasoning stay
+  Spanish (never shown to the athlete) -- only the final reply's
+  language is controlled.
+- Mobile: `apps/mobile/src/lib/i18n.ts` (a typed `Strings` dictionary,
+  `en` checked against `es`'s shape via `satisfies` so a missing key is
+  a compile error) + `apps/mobile/src/hooks/use-language.tsx`
+  (`LanguageProvider`/`useLanguage()`, caches the last-known language via
+  the same SecureStore/localStorage split `lib/supabase.ts` already
+  uses, refreshes from `GET /me` on every auth-state change). Every
+  screen (`login`, `(tabs)/index`, `(tabs)/programs`, `(tabs)/coach`,
+  `(tabs)/profile`, `program/[id]`, `session/[id]`, `exercise/[id]`, the
+  root/tab layouts) now reads from `strings` instead of hardcoded
+  Spanish. `profile.tsx` got a real language toggle (ES/EN) that calls
+  `PATCH /me` optimistically. `lib/format.ts`'s `formatPrescription`/
+  `formatEvidence` take a `lang` param.
+
+**Layer 2 -- exercise/program content (names, objectives,
+contraindications, coaching cues, taxonomy).** This is the actual
+coaching knowledge, not UI copy, so the user was asked explicitly
+whether to machine-translate it now (faster, more risk) or hold off and
+translate carefully later; the user chose to translate now, on the
+condition it goes through this session's own careful pass (not an
+unreviewed auto-translate) and gets reviewed in the SQL editor before
+running in production, same as every other script this session.
+Approach:
+- Every translatable model got a nullable `*En` column (`Exercise`:
+  `nameEn`/`objectiveEn`/`descriptionEn`/`movementComplexityEn`/
+  `contraindicationsEn`/`coachingCuesEn`; `Muscle.nameEn`/
+  `muscleGroupEn`; `PhysicalQuality.nameEn`; `Equipment.nameEn`;
+  `Sport.nameEn`; `SportTransfer.descriptionEn`; `ExerciseLink.rationaleEn`;
+  `Session.labelEn`; `Block.purposeEn`; `BlockExercise.instanceNoteEn`).
+- Translated directly (not run through an automated translator): the 17
+  original seed.ts exercises (father's program), the 12 `gym-*`
+  exercises already in the database, the father's Mov Prep exercise
+  ("Marcha en el sitio"), the 3 shoulder exercises added for the padel
+  player's rework, all ~21 TIMP-catalog exercises across the 4 batches,
+  every taxonomy table (Sport/Muscle/PhysicalQuality/Equipment), the
+  father's program's SportTransfer entries, and its one ExerciseLink
+  rationale. Session labels translated generically (Mov Prep -> Warm-up,
+  Dia N -> Day N) since that text is reused across programs.
+- Deliberately NOT translated (gaps, not guesses): "Rotacion interna de
+  hombro con banda" (`gym-banded-shoulder-external-rotation`) -- created
+  in an earlier session, its exact stored Spanish text was never visible
+  in this one, so it wasn't touched rather than risk a mismatched
+  paraphrase. Block.purpose/BlockExercise.instanceNote on the father's
+  and padel player's *already-assigned* programs -- both are Spanish-
+  speaking athletes, so this was deliberately deprioritized versus the
+  reusable exercise library, which is what matters for Saran's future
+  program.
+- Verified end-to-end locally: applied both migrations, ran the full
+  translation script for real (not rolled back) against local dev,
+  confirmed `GET /exercises/:id?lang=en` vs `?lang=es` return distinct,
+  correct content, confirmed `PATCH /me` requires auth (401 without a
+  token), confirmed `/chat`'s not-configured fallback message respects
+  `?lang=`.
+
+Two SQL scripts for production (Supabase SQL editor, same review
+workflow as always): the two generated migrations (add the `language`
+column + all the `*En` columns), then the content-translation script
+(`UPDATE ... WHERE name = ...`, idempotent, safe to re-run). Both
+pasted to the user in chat, not sent as files.
+
+Not done, flagged as follow-ups: translating
+`gym-banded-shoulder-external-rotation` (need its real Spanish text
+first) and the two existing programs' per-instance Spanish notes if a
+non-Spanish-speaking athlete is ever assigned one of them.

@@ -16,10 +16,22 @@ if (!supabaseUrl) {
 
 const jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
 
+export type Lang = "es" | "en";
+
 declare module "fastify" {
   interface FastifyRequest {
     user?: Profile;
+    // Resolved display language for this request -- "es" unless the
+    // caller is a logged-in Profile with language = "en". Set by
+    // `authenticate` on protected routes, or by `attachLanguage` on
+    // public ones. Always defined by the time a handler runs on any
+    // route that registers either hook.
+    language: Lang;
   }
+}
+
+function toLang(value: string | undefined): Lang {
+  return value === "en" ? "en" : "es";
 }
 
 async function resolveProfile(supabaseId: string, email: string) {
@@ -34,27 +46,53 @@ async function resolveProfile(supabaseId: string, email: string) {
   });
 }
 
-export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
+async function verifyBearerToken(req: FastifyRequest) {
   const header = req.headers.authorization;
   const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
-  if (!token) {
-    return reply.code(401).send({ error: "Missing bearer token" });
-  }
+  if (!token) return null;
 
   let payload;
   try {
     ({ payload } = await jwtVerify(token, jwks));
   } catch {
-    return reply.code(401).send({ error: "Invalid or expired token" });
+    return null;
   }
 
   const supabaseId = payload.sub;
   const email = typeof payload.email === "string" ? payload.email : undefined;
-  if (!supabaseId || !email) {
-    return reply.code(401).send({ error: "Token missing required claims" });
+  if (!supabaseId || !email) return null;
+  return { supabaseId, email };
+}
+
+export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
+  const claims = await verifyBearerToken(req);
+  if (!claims) {
+    return reply.code(401).send({ error: "Missing or invalid bearer token" });
   }
 
-  req.user = await resolveProfile(supabaseId, email);
+  req.user = await resolveProfile(claims.supabaseId, claims.email);
+  req.language = toLang(req.user.language);
+}
+
+// For routes that stay public/unauthenticated (exercise & program detail,
+// the chat endpoint) but still want to reply in the caller's language when
+// possible. Best-effort and never fails the request: a missing or invalid
+// token just falls back to `?lang=` if given, else Spanish. This is a
+// second, separate token check from `authenticate` on purpose -- these
+// routes don't require login, so we can't reuse a hook that 401s without
+// one.
+export async function attachLanguage(req: FastifyRequest) {
+  const claims = await verifyBearerToken(req);
+  if (claims) {
+    const profile = await prisma.profile.findUnique({ where: { id: claims.supabaseId } });
+    if (profile) {
+      req.language = toLang(profile.language);
+      return;
+    }
+  }
+
+  const queryLang = (req.query as Record<string, unknown> | undefined)?.lang;
+  req.language = toLang(typeof queryLang === "string" ? queryLang : undefined);
 }
 
 // Use as a second onRequest hook after `authenticate` (Fastify runs

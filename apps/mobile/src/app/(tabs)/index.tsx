@@ -7,11 +7,13 @@ import type { MyProgramSummary } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMyPrograms } from "@/lib/api";
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const router = useRouter();
   const [programs, setPrograms] = useState<MyProgramSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +39,16 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Hola</ThemedText>
+        <ThemedText type="title">{strings.home.greeting}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          Tu coach de preparacion fisica para padel
+          {strings.home.subtitle}
         </ThemedText>
 
         {error && (
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText>No se pudo conectar con el servidor: {error}</ThemedText>
+            <ThemedText>
+              {strings.home.connectionError}: {error}
+            </ThemedText>
           </ThemedView>
         )}
 
@@ -59,18 +63,18 @@ export default function HomeScreen() {
             ]}
           >
             <ThemedText themeColor="textSecondary" type="small">
-              Programa actual
+              {strings.home.currentProgram}
             </ThemedText>
             <ThemedText type="subtitle">{current.name}</ThemedText>
             <ThemedText themeColor="textSecondary">
-              {current.dayCount} sesiones · {current.sportName}
+              {current.dayCount} {strings.home.sessionsCount} · {current.sportName}
             </ThemedText>
           </Pressable>
         )}
 
         {programs?.length === 0 && (
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText>Todavia no hay programas asignados.</ThemedText>
+            <ThemedText>{strings.home.noProgram}</ThemedText>
           </ThemedView>
         )}
 
@@ -82,7 +86,7 @@ export default function HomeScreen() {
           ]}
         >
           <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
-            Preguntale al coach
+            {strings.home.askCoach}
           </ThemedText>
         </Pressable>
       </ThemedView>

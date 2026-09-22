@@ -7,11 +7,13 @@ import type { MyProgramSummary } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMyPrograms } from "@/lib/api";
 
 export default function ProgramsScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const router = useRouter();
   const [programs, setPrograms] = useState<MyProgramSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +37,13 @@ export default function ProgramsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Programas</ThemedText>
+        <ThemedText type="title">{strings.programs.title}</ThemedText>
 
-        {error && <ThemedText>No se pudo conectar con el servidor: {error}</ThemedText>}
+        {error && (
+          <ThemedText>
+            {strings.programs.connectionError}: {error}
+          </ThemedText>
+        )}
         {!error && programs === null && <ActivityIndicator color={theme.text} />}
 
         <FlatList
@@ -54,7 +60,7 @@ export default function ProgramsScreen() {
             >
               <ThemedText type="smallBold">{item.name}</ThemedText>
               <ThemedText themeColor="textSecondary" type="small">
-                {item.sportName} · {item.dayCount} sesiones ·{" "}
+                {item.sportName} · {item.dayCount} {strings.programs.sessionsCount} ·{" "}
                 {new Date(item.startDate).toLocaleDateString()} -{" "}
                 {new Date(item.endDate).toLocaleDateString()}
               </ThemedText>
@@ -62,7 +68,7 @@ export default function ProgramsScreen() {
           )}
           ListEmptyComponent={
             programs?.length === 0 ? (
-              <ThemedText themeColor="textSecondary">Todavia no hay programas.</ThemedText>
+              <ThemedText themeColor="textSecondary">{strings.programs.noPrograms}</ThemedText>
             ) : null
           }
         />

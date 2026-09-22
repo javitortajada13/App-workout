@@ -4,19 +4,56 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
+import type { Lang } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+
+function LanguageOption({ lang, label }: { lang: Lang; label: string }) {
+  const theme = useTheme();
+  const { language, setLanguage } = useLanguage();
+  const active = language === lang;
+
+  return (
+    <Pressable
+      onPress={() => setLanguage(lang)}
+      style={({ pressed }) => [
+        styles.languageOption,
+        {
+          backgroundColor: active ? theme.accent : theme.backgroundElement,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
+    >
+      <ThemedText
+        type="smallBold"
+        style={active ? { color: theme.accentContrast } : undefined}
+      >
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Perfil</ThemedText>
-        <ThemedText themeColor="textSecondary">
-          Nivel de atleta y preferencias llegan en una fase posterior.
-        </ThemedText>
+        <ThemedText type="title">{strings.profile.title}</ThemedText>
+        <ThemedText themeColor="textSecondary">{strings.profile.subtitle}</ThemedText>
+
+        <ThemedView style={styles.languageSection}>
+          <ThemedText type="label" themeColor="textSecondary">
+            {strings.profile.language}
+          </ThemedText>
+          <ThemedView style={styles.languageRow}>
+            <LanguageOption lang="es" label={strings.profile.spanish} />
+            <LanguageOption lang="en" label={strings.profile.english} />
+          </ThemedView>
+        </ThemedView>
 
         <Pressable
           onPress={() => supabase.auth.signOut()}
@@ -25,7 +62,7 @@ export default function ProfileScreen() {
             { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <ThemedText type="smallBold">Cerrar sesion</ThemedText>
+          <ThemedText type="smallBold">{strings.profile.signOut}</ThemedText>
         </Pressable>
       </ThemedView>
     </SafeAreaView>
@@ -35,6 +72,14 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.two },
+  languageSection: { marginTop: Spacing.three, gap: Spacing.two },
+  languageRow: { flexDirection: "row", gap: Spacing.two },
+  languageOption: {
+    flex: 1,
+    borderRadius: Spacing.three,
+    paddingVertical: Spacing.three,
+    alignItems: "center",
+  },
   signOutButton: {
     marginTop: Spacing.three,
     borderRadius: Spacing.three,

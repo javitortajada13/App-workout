@@ -7,6 +7,7 @@ import type { SessionDetail } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { formatPrescription } from "@/lib/format";
 import { fetchSession } from "@/lib/api";
@@ -15,6 +16,7 @@ import { youtubeThumbnailUrl } from "@/lib/video";
 export default function SessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const { language, strings } = useLanguage();
   const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,9 @@ export default function SessionScreen() {
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       {error && (
         <ThemedView style={styles.container}>
-          <ThemedText>No se pudo cargar la sesion: {error}</ThemedText>
+          <ThemedText>
+            {strings.session.loadError}: {error}
+          </ThemedText>
         </ThemedView>
       )}
       {!error && !session && (
@@ -52,9 +56,7 @@ export default function SessionScreen() {
 
           {session.blocks.length === 0 && (
             <ThemedView type="backgroundElement" style={styles.emptyBlock}>
-              <ThemedText themeColor="textSecondary">
-                Todavia no hay bloques cargados para esta sesion.
-              </ThemedText>
+              <ThemedText themeColor="textSecondary">{strings.session.noBlocks}</ThemedText>
             </ThemedView>
           )}
 
@@ -62,11 +64,11 @@ export default function SessionScreen() {
             <View key={block.id} style={styles.block}>
               <View style={styles.blockHeader}>
                 <ThemedText type="label" themeColor="textSecondary">
-                  Bloque {block.order}
+                  {strings.session.block} {block.order}
                 </ThemedText>
                 {block.rounds ? (
                   <ThemedText themeColor="textSecondary" type="small">
-                    {block.rounds} veces
+                    {block.rounds} {strings.session.times}
                   </ThemedText>
                 ) : null}
               </View>
@@ -99,7 +101,7 @@ export default function SessionScreen() {
                       <View style={styles.exerciseInfo}>
                         <ThemedText type="smallBold">{be.exercise.name}</ThemedText>
                         <ThemedText themeColor="textSecondary" type="small">
-                          {formatPrescription(be)}
+                          {formatPrescription(be, language)}
                         </ThemedText>
                         {be.instanceNote && (
                           <ThemedText themeColor="textSecondary" type="small" style={styles.note}>

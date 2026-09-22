@@ -5,11 +5,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginScreen() {
   const theme = useTheme();
+  const { strings } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,16 +36,16 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Iniciar sesion</ThemedText>
+        <ThemedText type="title">{strings.login.title}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-          Introduce el email y la contrasena que te ha dado tu entrenador.
+          {strings.login.subtitle}
         </ThemedText>
 
         <ThemedView style={styles.form}>
           <TextInput
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={strings.login.emailPlaceholder}
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoComplete="email"
@@ -53,7 +55,7 @@ export default function LoginScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
-            placeholder="Contrasena"
+            placeholder={strings.login.passwordPlaceholder}
             placeholderTextColor={theme.textSecondary}
             secureTextEntry
             autoComplete="password"
@@ -77,7 +79,7 @@ export default function LoginScreen() {
               <ActivityIndicator color={theme.accentContrast} />
             ) : (
               <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
-                Entrar
+                {strings.login.submit}
               </ThemedText>
             )}
           </Pressable>

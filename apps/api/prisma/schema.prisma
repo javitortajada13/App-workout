@@ -76,6 +76,11 @@ model Profile {
   // Deliberately a plain field, no structure or adaptive logic behind it yet
   // -- see PROJECT_STATE.md section 13.
   athleteLevel String?
+  // Display language for this person's own app + AI coach replies -- "es"
+  // or "en" for now (see PROJECT_STATE.md, the Saran/language-support
+  // entry). Never affects what a coach sees about other athletes; purely
+  // a per-person reading preference.
+  language     String   @default("es")
   // Coach-only free text: medical history, functional test notes, sport(s),
   // load-progression philosophy for this athlete. Never shown to the
   // athlete themselves -- read by the coach (or whoever is building this
@@ -97,6 +102,10 @@ model Profile {
 model Sport {
   id        String          @id @default(cuid())
   name      String          @unique
+  // English display name, filled in as content gets translated (see
+  // PROJECT_STATE.md, language-support entry). Null means "not translated
+  // yet" -- callers fall back to `name`, never leave a blank string.
+  nameEn    String?
   programs  Program[]
   transfers SportTransfer[]
 }
@@ -132,6 +141,7 @@ model Program {
 model Session {
   id        String      @id @default(cuid())
   label     String
+  labelEn   String?
   order     Int
   role      SessionRole @default(main)
   program   Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
@@ -150,6 +160,8 @@ model Block {
   blockType BlockType       @default(straight)
   rounds    Int?
   purpose   String?
+  // English translation of `purpose`, filled in per-program as needed.
+  purposeEn String?
   session   Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId String
   exercises BlockExercise[]
@@ -169,6 +181,8 @@ model BlockExercise {
   tempo            String?
   rest             String?
   instanceNote     String?
+  // English translation of `instanceNote`, filled in per-program as needed.
+  instanceNoteEn   String?
   block            Block             @relation(fields: [blockId], references: [id], onDelete: Cascade)
   blockId          String
   exercise         Exercise          @relation(fields: [exerciseId], references: [id])
@@ -193,6 +207,19 @@ model Exercise {
   evidenceRating     EvidenceRating?
   videoUrl           String?
   thumbnailUrl       String?
+  // English translations of the fields above, filled in as content gets
+  // translated (see PROJECT_STATE.md, language-support entry). All
+  // nullable and independent -- a partially-translated exercise falls
+  // back to the Spanish field per-field, never shows a blank string.
+  // Translated by a human/coach-reviewed pass, not machine-translated at
+  // request time -- this repo's "never invent an exercise fact" rule
+  // applies to contraindicationsEn just as much as to contraindications.
+  nameEn               String?
+  objectiveEn          String?
+  descriptionEn        String?
+  movementComplexityEn String?
+  contraindicationsEn  String?
+  coachingCuesEn       String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -208,6 +235,7 @@ model Exercise {
 model PhysicalQuality {
   id        String                    @id @default(cuid())
   name      String                    @unique
+  nameEn    String?
   exercises ExercisePhysicalQuality[]
 }
 
@@ -222,10 +250,12 @@ model ExercisePhysicalQuality {
 }
 
 model Muscle {
-  id          String           @id @default(cuid())
-  name        String           @unique
-  muscleGroup String?
-  exercises   ExerciseMuscle[]
+  id            String           @id @default(cuid())
+  name          String           @unique
+  nameEn        String?
+  muscleGroup   String?
+  muscleGroupEn String?
+  exercises     ExerciseMuscle[]
 }
 
 model ExerciseMuscle {
@@ -241,6 +271,7 @@ model ExerciseMuscle {
 model Equipment {
   id        String              @id @default(cuid())
   name      String              @unique
+  nameEn    String?
   exercises ExerciseEquipment[]
 }
 
@@ -261,6 +292,7 @@ model ExerciseLink {
   id               String           @id @default(cuid())
   relationshipType ExerciseLinkType
   rationale        String?
+  rationaleEn      String?
   fromExercise     Exercise         @relation("LinkFrom", fields: [fromExerciseId], references: [id], onDelete: Cascade)
   fromExerciseId   String
   toExercise       Exercise         @relation("LinkTo", fields: [toExerciseId], references: [id], onDelete: Cascade)
@@ -275,6 +307,7 @@ model ExerciseLink {
 model SportTransfer {
   id             String         @id @default(cuid())
   description    String
+  descriptionEn  String?
   evidenceRating EvidenceRating
   exercise       Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   exerciseId     String

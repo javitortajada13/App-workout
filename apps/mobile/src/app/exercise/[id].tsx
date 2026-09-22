@@ -7,17 +7,11 @@ import type { ExerciseDetail } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { formatEvidence } from "@/lib/format";
 import { fetchExercise } from "@/lib/api";
 import { youtubeEmbedUrl } from "@/lib/video";
-
-const LINK_LABEL: Record<string, string> = {
-  progression: "Progresion",
-  regression: "Regresion (mas facil)",
-  variation: "Variacion",
-  alternative: "Alternativa",
-};
 
 function Chip({ label, sublabel }: { label: string; sublabel?: string }) {
   const theme = useTheme();
@@ -48,6 +42,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ExerciseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
+  const { language, strings } = useLanguage();
   const router = useRouter();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +66,9 @@ export default function ExerciseScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <ThemedView style={styles.container}>
-          <ThemedText>No se pudo cargar el ejercicio: {error}</ThemedText>
+          <ThemedText>
+            {strings.exercise.loadError}: {error}
+          </ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
@@ -87,7 +84,7 @@ export default function ExerciseScreen() {
     );
   }
 
-  const evidenceLabel = formatEvidence(exercise.evidenceRating);
+  const evidenceLabel = formatEvidence(exercise.evidenceRating, language);
   const embedUrl = exercise.videoUrl ? youtubeEmbedUrl(exercise.videoUrl) : null;
 
   return (
@@ -114,7 +111,7 @@ export default function ExerciseScreen() {
                 guaranteed way to watch the video without any troubleshooting. */}
             <Pressable onPress={() => Linking.openURL(exercise.videoUrl!)}>
               <ThemedText type="small" style={{ color: theme.accent, textAlign: "center" }}>
-                No carga el video? Abrelo aqui
+                {strings.exercise.noVideo}
               </ThemedText>
             </Pressable>
           </ThemedView>
@@ -128,44 +125,52 @@ export default function ExerciseScreen() {
               ]}
             >
               <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
-                Ver video
+                {strings.exercise.watchVideo}
               </ThemedText>
             </Pressable>
           )
         )}
 
         {exercise.coachingCues && (
-          <Section title="Como hacerlo">
+          <Section title={strings.exercise.howTo}>
             <ThemedText>{exercise.coachingCues}</ThemedText>
           </Section>
         )}
 
         {exercise.equipment.length > 0 && (
-          <Section title="Equipamiento">
+          <Section title={strings.exercise.equipment}>
             <ThemedView style={styles.chipRow}>
               {exercise.equipment.map((e) => (
-                <Chip key={e.id} label={e.name} sublabel={e.required ? undefined : "opcional"} />
+                <Chip
+                  key={e.id}
+                  label={e.name}
+                  sublabel={e.required ? undefined : strings.exercise.optional}
+                />
               ))}
             </ThemedView>
           </Section>
         )}
 
-        <Section title="Por que">
+        <Section title={strings.exercise.why}>
           <ThemedText>{exercise.objective}</ThemedText>
         </Section>
 
         {exercise.physicalQualities.length > 0 && (
-          <Section title="Que entrena">
+          <Section title={strings.exercise.trains}>
             <ThemedView style={styles.chipRow}>
               {exercise.physicalQualities.map((q) => (
-                <Chip key={q.id} label={q.name} sublabel={q.emphasis === "secondary" ? "secundaria" : undefined} />
+                <Chip
+                  key={q.id}
+                  label={q.name}
+                  sublabel={q.emphasis === "secondary" ? strings.exercise.secondary : undefined}
+                />
               ))}
             </ThemedView>
           </Section>
         )}
 
         {exercise.muscles.length > 0 && (
-          <Section title="Musculos">
+          <Section title={strings.exercise.muscles}>
             <ThemedView style={styles.chipRow}>
               {exercise.muscles.map((m) => (
                 <Chip key={m.id} label={m.name} />
@@ -175,7 +180,7 @@ export default function ExerciseScreen() {
         )}
 
         {exercise.contraindications && (
-          <Section title="Contraindicaciones">
+          <Section title={strings.exercise.contraindications}>
             <ThemedView
               style={[
                 styles.warningBox,
@@ -188,19 +193,19 @@ export default function ExerciseScreen() {
         )}
 
         {evidenceLabel && (
-          <Section title="Evidencia cientifica">
+          <Section title={strings.exercise.evidence}>
             <ThemedText>{evidenceLabel}</ThemedText>
           </Section>
         )}
 
         {exercise.sportTransfers.length > 0 && (
-          <Section title="Transferencia al deporte">
+          <Section title={strings.exercise.sportTransfer}>
             {exercise.sportTransfers.map((st, i) => (
               <ThemedView key={i} style={styles.transferRow}>
                 <ThemedText type="smallBold">{st.sportName}</ThemedText>
                 <ThemedText>{st.description}</ThemedText>
                 <ThemedText themeColor="textSecondary" type="small">
-                  {formatEvidence(st.evidenceRating)}
+                  {formatEvidence(st.evidenceRating, language)}
                 </ThemedText>
               </ThemedView>
             ))}
@@ -208,7 +213,7 @@ export default function ExerciseScreen() {
         )}
 
         {exercise.links.length > 0 && (
-          <Section title="Variaciones">
+          <Section title={strings.exercise.variations}>
             {exercise.links.map((link, i) => (
               <Pressable
                 key={i}
@@ -220,7 +225,7 @@ export default function ExerciseScreen() {
               >
                 <ThemedText type="smallBold">{link.exercise.name}</ThemedText>
                 <ThemedText type="small" style={{ color: theme.accent, fontWeight: "700" }}>
-                  {LINK_LABEL[link.relationshipType] ?? link.relationshipType}
+                  {strings.exercise.link[link.relationshipType] ?? link.relationshipType}
                 </ThemedText>
                 {link.rationale && (
                   <ThemedText themeColor="textSecondary" type="small">
