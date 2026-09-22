@@ -1800,6 +1800,52 @@ nothing to do with this code, on either device. No remaining ambiguity.
 Final state: plain iframe, viewer picks the language by hand the first
 time per device/browser, exactly like using youtube.com directly.
 
+### Second real client: padel player with shoulder rehab need (2026-09-22)
+
+First program built for someone other than the father -- confirms this
+conversation/session is meant to be reused across all of the coach's
+real clients (their own question), not one session per client. No new
+repo/branch/infra needed per client, just a new `Program` + `Profile`
+in the same app, same as the father.
+
+**Client**: ~37yo recreational padel player (intermediate/amateur by
+local Thailand standards), sedentary outside padel. Active anterior
+shoulder pain from a missed smash (deceleration injury, no ball
+contact). Wants full-body conditioning like the father's program plus
+shoulder rehab and padel-specific injury prevention (shoulder, knee,
+ankle dorsiflexion, low back, glutes) and court-movement work.
+
+Reused most of the existing padel/S&C exercise library (the one built
+early in this project, largely unused until now) -- this is its first
+real use. Added 2 new exercises that were missing: `gym-banded-shoulder-
+external-rotation` (rotator cuff strengthening, standard low-risk rehab
+for anterior shoulder pain) and `gym-ankle-dorsiflexion-knee-to-wall`
+(ankle mobility, explicitly requested, nothing existed for it).
+
+**Design calls made without asking first** (per the user's explicit
+"work ahead without me" instruction), flagged to the user for review
+rather than silently decided:
+- Excluded all overhead-pressing exercises (DB Overhead Press, both
+  Landmine presses) and the medicine-ball rotational throws for now --
+  the injury mechanism was an overhead deceleration motion, loading that
+  direction before he's pain-free would be premature. Recorded in the
+  Program's `coachNote` so this isn't silently forgotten later.
+- Excluded the three "Alta" (high) complexity exercises (Hang Muscle
+  Snatch, both plyometric "Drop...Jump" ones) -- client is sedentary
+  outside padel, better to build a base first. Also noted in `coachNote`
+  as candidates for later.
+- Assumed 2 sessions/week, same cadence as the father's program.
+- Program name is a generic placeholder (client's real name not given
+  yet) -- rename via admin once known.
+
+SQL: `/tmp/.../scratchpad/add-padel-player-program.sql`. Verified locally
+(transaction + rollback): 2 new exercises + their taxonomy, `Sport` reused
+via name lookup (`Padel`, not hardcoded id -- applying the id-mismatch
+lesson from earlier), `Program` (draft, unassigned -- no athlete account
+exists yet for this client), 3 Sessions (Mov Prep + Dia 1 + Dia 2), 12
+Blocks, 15 BlockExercises, all correct. Not yet run against production,
+not yet reviewed by the user.
+
 ---
 
 ## References
