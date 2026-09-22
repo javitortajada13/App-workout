@@ -2221,3 +2221,30 @@ direct-URL test (which bypassed the app's cached URL and used a
 distinct, never-before-requested URL with `?lang=en`) that the data and
 server logic were already correct -- this was purely a caching bug, not
 a data or resolution bug.
+
+## 2026-09-22 -- Language toggle silently failed to save server-side
+
+Root cause of "nothing translates even though Profile shows English
+selected, even in a private tab": the language toggle
+(apps/mobile/src/hooks/use-language.tsx) updated the screen optimistically
+the instant it was tapped, then fired the `PATCH /me` save in the
+background with only a `console.error` on failure -- no visible error,
+no rollback. Confirmed directly: `SELECT language FROM "Profile" WHERE
+role = 'coach'` showed `'es'` in production despite the app showing
+"English" highlighted. Every language-dependent server response
+(program name, session labels, exercise content) was correctly reading
+the *real* (still-Spanish) Profile.language all along -- there was
+never a caching or resolution bug; the save itself just never landed,
+and nothing surfaced that.
+
+Fixed properly, not just patched for this one case: `setLanguage` is no
+longer optimistic -- it awaits the `PATCH /me` response and only updates
+the screen (and the local cache) once the server confirms it, with a new
+`error` field on the language context that `profile.tsx` now displays
+visibly (plus a spinner on the button while saving) if the save fails
+for any reason (dropped connection, the API's free-tier cold start,
+anything). This can't silently drift out of sync with the server again.
+
+Also fixed the coach's own account directly via SQL
+(`UPDATE "Profile" SET language = 'en' WHERE role = 'coach'`) so
+testing isn't blocked on redeploying first.

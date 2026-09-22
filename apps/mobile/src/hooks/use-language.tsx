@@ -31,7 +31,14 @@ function setCached(value: string): Promise<void> {
 interface LanguageContextValue {
   language: Lang;
   strings: Strings;
-  setLanguage: (lang: Lang) => void;
+  setLanguage: (lang: Lang) => Promise<void>;
+  // Set when the last setLanguage() call failed to save server-side --
+  // the toggle used to update the screen instantly regardless of whether
+  // the PATCH actually succeeded, which silently left the UI showing
+  // "English" while the server (and therefore every translated response)
+  // stayed on Spanish. Never swallow this again: the caller (profile.tsx)
+  // must show it.
+  error: string | null;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -43,6 +50,7 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 // coupling the two for.
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Lang>("es");
+  const [error, setError] = useState<string | null>(null);
 
   // Read the last-known language immediately so the UI doesn't flash back
   // to Spanish on every app open while the network round-trip to /me is
@@ -66,14 +74,27 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return () => subscription.subscription.unsubscribe();
   }, []);
 
-  function setLanguage(lang: Lang) {
-    setLanguageState(lang); // optimistic -- the toggle should feel instant
-    setCached(lang).catch(() => {});
-    updateLanguage(lang).catch((error) => console.error("Failed to save language preference", error));
+  // Deliberately NOT optimistic: wait for the server to actually confirm
+  // the save before changing what the screen shows, and surface a real
+  // error if it fails. The previous optimistic version updated the screen
+  // immediately regardless of whether the PATCH succeeded, which hid a
+  // real save failure -- the toggle looked switched to English forever
+  // while the server (and therefore every piece of translated content)
+  // silently stayed on Spanish.
+  async function setLanguage(lang: Lang) {
+    setError(null);
+    try {
+      const me = await updateLanguage(lang);
+      setLanguageState(me.language);
+      await setCached(me.language);
+    } catch (err) {
+      console.error("Failed to save language preference", err);
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
-    <LanguageContext.Provider value={{ language, strings: STRINGS[language], setLanguage }}>
+    <LanguageContext.Provider value={{ language, strings: STRINGS[language], setLanguage, error }}>
       {children}
     </LanguageContext.Provider>
   );

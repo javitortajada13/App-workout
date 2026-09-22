@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -12,32 +13,41 @@ import { supabase } from "@/lib/supabase";
 function LanguageOption({ lang, label }: { lang: Lang; label: string }) {
   const theme = useTheme();
   const { language, setLanguage } = useLanguage();
+  const [saving, setSaving] = useState(false);
   const active = language === lang;
+
+  async function handlePress() {
+    setSaving(true);
+    await setLanguage(lang);
+    setSaving(false);
+  }
 
   return (
     <Pressable
-      onPress={() => setLanguage(lang)}
+      onPress={handlePress}
+      disabled={saving}
       style={({ pressed }) => [
         styles.languageOption,
         {
           backgroundColor: active ? theme.accent : theme.backgroundElement,
-          opacity: pressed ? 0.8 : 1,
+          opacity: pressed || saving ? 0.7 : 1,
         },
       ]}
     >
-      <ThemedText
-        type="smallBold"
-        style={active ? { color: theme.accentContrast } : undefined}
-      >
-        {label}
-      </ThemedText>
+      {saving ? (
+        <ActivityIndicator color={active ? theme.accentContrast : theme.text} />
+      ) : (
+        <ThemedText type="smallBold" style={active ? { color: theme.accentContrast } : undefined}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }
 
 export default function ProfileScreen() {
   const theme = useTheme();
-  const { strings } = useLanguage();
+  const { strings, error } = useLanguage();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -53,6 +63,11 @@ export default function ProfileScreen() {
             <LanguageOption lang="es" label={strings.profile.spanish} />
             <LanguageOption lang="en" label={strings.profile.english} />
           </ThemedView>
+          {error && (
+            <ThemedText type="small" style={{ color: theme.warningBorder }}>
+              {strings.profile.languageError}
+            </ThemedText>
+          )}
         </ThemedView>
 
         <Pressable
