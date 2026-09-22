@@ -1846,6 +1846,34 @@ exists yet for this client), 3 Sessions (Mov Prep + Dia 1 + Dia 2), 12
 Blocks, 15 BlockExercises, all correct. Not yet run against production,
 not yet reviewed by the user.
 
+### Bug: admin ProgramEditor crashed blank on any program (2026-09-22)
+
+User hit a blank screen opening the new padel-player draft program in
+the admin app -- first real trigger of a pre-existing bug, not something
+wrong with that program's data specifically. Root cause: `ProgramEditor.tsx`
+reads `session.blocks` and `program.coachNote`, but `fetchProgram` called
+the *public* `GET /programs/:id` (`programs.ts`), which only ever
+returned the summary shape (`blockCount`/`exerciseCount`, no `blocks`,
+no `coachNote` -- see `loadProgramDetail` in `mappers.ts`). Calling
+`.slice()` on the resulting `undefined` threw, blanking the whole page
+with no error boundary to catch it. This would have broken for *every*
+program, including the father's -- it just hadn't been hit yet because
+nobody had opened a program's detail page in the admin app deeply
+enough before now.
+
+Fixed by adding a new coach-authenticated route, `GET
+/programs/:id/admin` (`program-admin.ts`), with the full nested shape
+(sessions -> blocks -> block-exercises -> exercise ref) the editor
+actually needs, and pointing admin's `fetchProgram` at it. Deliberately
+did **not** change the existing public `/programs/:id` -- it's
+unauthenticated/unscoped (see its own comment in `programs.ts`), and
+`coachNote` must never be reachable from there; the mobile program
+overview also doesn't need full block nesting, just the counts it
+already gets. Verified the new route's query logic directly against
+local dev data via a throwaway `tsx` script (real session/block/exercise
+counts, `coachNote` present) -- couldn't hit it over HTTP since a real
+coach JWT isn't available in this sandbox.
+
 ---
 
 ## References
