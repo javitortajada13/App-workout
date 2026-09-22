@@ -2139,3 +2139,27 @@ This is a good illustration of why the exact-string-match approach was
 risky for anything not authored within this session's own visibility:
 the fix is now robust to text variants going forward, not just patched
 for this one case.
+
+## 2026-09-22 -- repsOrDuration double-suffix bug (pre-existing, surfaced by i18n)
+
+Coach's screenshot showed "10 por lado (per side)" -- a real, pre-existing
+data bug (present before this session's language work too, just less
+visible in Spanish-only: "10 por lado (por lado)"). Root cause: several
+`BlockExercise.repsOrDuration` values had the unit wording typed directly
+into the free-text field ("10 por lado", "8 repeticiones"), and
+`formatPrescription` *also* appends its own unit suffix based on
+`prescriptionType` -- so it doubled up. Fixed at the data level (not a
+`*En` field -- once the redundant unit text is stripped, the same numeric
+value is correct in both languages): regex-based `UPDATE` that strips a
+trailing "por lado" from `reps_per_side` rows and "repeticiones" from
+`reps` rows, keeping any other descriptive words ("10 pasos por lado" ->
+"10 pasos"). Left `distance`-type rows alone since the UI never appends a
+suffix to those. Verified against the 9 affected rows in local dev (8
+fixed, 1 correctly left untouched).
+
+Also, on direct feedback: added `nameEn` for "Rotacion externa de hombro
+con banda" (its exact Spanish name was finally seen, in the coach's
+screenshot) and translated the padel player program's Mov Prep
+`Block.purpose`/`BlockExercise.instanceNote` (previously deprioritized as
+lower-value since that athlete is Spanish-speaking -- reversed once the
+coach was actually looking at it in English).
