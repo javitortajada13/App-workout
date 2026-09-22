@@ -29,6 +29,77 @@ function isValidEnumValue<T extends Record<string, string>>(
 export function registerProgramAdminRoutes(app: FastifyInstance) {
   // --- Program ---
 
+  // Coach-only, fully nested (sessions -> blocks -> block-exercises) detail
+  // for the admin program editor. Deliberately a separate route from the
+  // public GET /programs/:id in programs.ts (which returns the summary
+  // shape used by the mobile program overview -- blockCount/exerciseCount,
+  // no coachNote) rather than changing that one: coachNote must never be
+  // reachable from an unauthenticated/unscoped route, and mobile doesn't
+  // need the full nesting. Found by a real "blank screen" report -- the
+  // admin editor expected block-level data this route never provided.
+  app.get<{ Params: { id: string } }>(
+    "/programs/:id/admin",
+    { onRequest: [authenticate, requireCoach] },
+    async (req, reply) => {
+      const program = await prisma.program.findUnique({
+        where: { id: req.params.id },
+        include: {
+          sport: true,
+          sessions: {
+            orderBy: { order: "asc" },
+            include: {
+              blocks: {
+                orderBy: { order: "asc" },
+                include: {
+                  exercises: {
+                    orderBy: { order: "asc" },
+                    include: { exercise: { select: { id: true, name: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!program) return reply.code(404).send({ error: "Program not found" });
+
+      return {
+        id: program.id,
+        name: program.name,
+        startDate: program.startDate.toISOString(),
+        endDate: program.endDate.toISOString(),
+        status: program.status,
+        coachNote: program.coachNote,
+        sportName: program.sport.name,
+        sessions: program.sessions.map((s) => ({
+          id: s.id,
+          label: s.label,
+          order: s.order,
+          role: s.role,
+          blocks: s.blocks.map((b) => ({
+            id: b.id,
+            order: b.order,
+            blockType: b.blockType,
+            rounds: b.rounds,
+            purpose: b.purpose,
+            exercises: b.exercises.map((be) => ({
+              id: be.id,
+              order: be.order,
+              prescriptionType: be.prescriptionType,
+              sets: be.sets,
+              repsOrDuration: be.repsOrDuration,
+              load: be.load,
+              tempo: be.tempo,
+              rest: be.rest,
+              instanceNote: be.instanceNote,
+              exercise: be.exercise,
+            })),
+          })),
+        })),
+      };
+    },
+  );
+
   app.post<{
     Body: { name?: string; startDate?: string; endDate?: string; sportId?: string; coachNote?: string };
   }>("/programs", { onRequest: [authenticate, requireCoach] }, async (req, reply) => {

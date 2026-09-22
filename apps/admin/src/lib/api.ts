@@ -239,7 +239,7 @@ export const createSportTransfer = (
 export const deleteSportTransfer = (id: string) => del(`/sport-transfers/${id}`);
 
 // --- Programs / sessions / blocks / block-exercises ---
-export const fetchProgram = (id: string) => get<ProgramAdmin>(`/programs/${id}`);
+export const fetchProgram = (id: string) => get<ProgramAdmin>(`/programs/${id}/admin`);
 
 export const createProgram = (body: {
   name: string;
