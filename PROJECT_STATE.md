@@ -1936,3 +1936,40 @@ directly into this script so it doesn't depend on that assumption.
 - Claude artifact "App Workout — Vista previa de diseño" —
   `https://claude.ai/code/artifact/bd82a155-1cd4-4ce2-9caa-c050da739da6`
   (updated 2026-07-25; unmodified by this reconstruction).
+
+## 2026-09-22 -- TIMP library catalog (Koichi Plank, Staggered Rack Pull, Dumbbell/Inertial farmer's walk)
+
+Added the coach's real "sept 2" TIMP screenshots to the shared `Exercise`
+library only (no Program/Session/Block -- explicitly a general-library
+add, not tied to any client). Two scripts:
+
+- `add-timp-library-exercises.sql`: 16 exercises (kettlebell arm bar,
+  single-leg box squat, cable lateral lunge with reach, single-leg hack
+  squat, single-leg press, bear crawl hip extension, deadlift, rack pull,
+  half-kneeling medball rotational throw, landmine lateral drop lunge,
+  front raise pulses, quadruped cross tap, waiter squat overhead, deadbug
+  overhead KB reach, side plank cable row, landmine split jerk staggered)
+  + 3 new Equipment rows (Polea baja, Maquina de prensa de piernas,
+  Maquina de hack squat). All with real YouTube videos found via
+  WebSearch, verified locally in a rolled-back transaction.
+- `add-timp-library-exercises-batch2.sql`: the 3 that needed the coach's
+  own clarification before being added (never guessed):
+  - Koichi Plank 1/2 -- coach-specific branded names not findable
+    anywhere online. Coach sent 3 real photos from his own filming.
+    Described from direct visual observation of those photos, not
+    invented: Koichi 1 = half-kneeling thoracic rotation with reach
+    (mobility, bodyweight); Koichi 2 = half-kneeling low-to-high cable
+    chop. Matched to real YouTube reference videos of the same generic
+    movement pattern.
+  - Staggered Rack Pull -- confirmed by the coach (text) to be the same
+    mechanics as the existing seeded "Monopodal Rack Pull" but in a
+    staggered stance (back foot heel-up for partial support) rather than
+    fully single-leg. Added as a distinct exercise since it's a
+    meaningfully different stance/difficulty, not a duplicate. No public
+    reference video combining both terms was found -- left `videoUrl`
+    NULL rather than approximate, per standing practice.
+
+Still NOT added: "Dumbbell rotational farmer's walk" and "Inertial
+farmer's walk" -- no photos or description came through for these two,
+still waiting on the coach to clarify before writing anything (same
+"never guess" rule).
