@@ -1988,3 +1988,19 @@ an exact match.
 
 Still NOT added: "Inertial farmer's walk" -- no photos/description yet,
 still waiting on the coach.
+
+## 2026-09-22 -- TIMP library catalog complete: Inertial farmer's walk added
+
+Confirmed by 4 real photos. Pattern visible across the frames: standard
+two-kettlebell farmer's walk, but one kettlebell is deliberately let
+swing like a pendulum instead of held still against the body -- the
+opposite of standard farmer's walk technique (which explicitly says to
+avoid swinging). "Inertial" = the core/grip must resist the load's own
+swinging inertia rather than just support a static weight. Left
+`videoUrl` NULL -- no video found showing this exact deliberate-swing
+variant, and a standard farmer's walk video would misrepresent it since
+standard technique asks for the opposite.
+
+This closes out the TIMP "sept 2" exercise-library catalog task (4
+batches total, ~20 exercises added across all of them). Nothing from
+those screenshots remains unconfirmed.
