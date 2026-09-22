@@ -2248,3 +2248,37 @@ anything). This can't silently drift out of sync with the server again.
 Also fixed the coach's own account directly via SQL
 (`UPDATE "Profile" SET language = 'en' WHERE role = 'coach'`) so
 testing isn't blocked on redeploying first.
+
+## 2026-09-22 -- Root cause of the language save failure: CORS blocked PATCH entirely
+
+Found and confirmed by reading `node_modules/@fastify/cors/index.js`
+directly (not documented anywhere obvious): `@fastify/cors`'s own
+default `methods` option is `'GET,HEAD,POST'` -- NOT the commonly
+assumed REST default. `apps/api/src/index.ts` registered cors with only
+`{ origin: true }`, never overriding `methods`, so PATCH (and PUT,
+DELETE) were never in `Access-Control-Allow-Methods` for any
+cross-origin request. Every deployed client is cross-origin from the API
+(app-workout-web and app-workout-admin are separate Render static
+sites from app-workout-api) -- so this silently blocked ALL PATCH/PUT/
+DELETE calls in production from any client, not just the language
+toggle: the whole admin app's write operations (editing exercises,
+taxonomy, athletes, block exercises -- everything using PATCH/PUT/DELETE
+in routes/*-admin.ts and taxonomy.ts) have likely been broken the same
+way whenever used from the deployed app-workout-admin site, independent
+of this session's language work. A browser blocking a request via CORS
+reports it to `fetch()` as a generic network error, which is why this
+surfaced as "check your internet connection" rather than any kind of
+permissions or CORS-specific error.
+
+Verified directly: sent the real preflight request format a browser
+sends (`OPTIONS /me` with `Access-Control-Request-Method: PATCH`)
+against the local dev server. Before the fix: `Access-Control-Allow-
+Methods` came back without PATCH. After adding `methods: ["GET", "HEAD",
+"POST", "PUT", "PATCH", "DELETE"]` to the cors registration: confirmed
+present.
+
+This explains the entire language-toggle debugging saga from earlier
+today -- there was never a caching bug or a language-resolution bug
+requiring investigation; the toggle's PATCH request was being silently
+dropped by the browser before it ever reached the server, on every
+single attempt, this whole time.

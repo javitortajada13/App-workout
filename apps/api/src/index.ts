@@ -11,7 +11,17 @@ import { registerTaxonomyRoutes } from "./routes/taxonomy.js";
 
 const app = Fastify({ logger: true });
 
-await app.register(cors, { origin: true });
+// @fastify/cors's own default `methods` is just 'GET,HEAD,POST' (confirmed
+// by reading node_modules/@fastify/cors/index.js -- not documented
+// prominently anywhere obvious). Every write in this API -- the language
+// toggle, and the whole admin app's PATCH/PUT/DELETE routes -- was
+// silently CORS-blocked by the browser whenever the request originated
+// from a different origin than the API itself (i.e. always, in
+// production: app-workout-web and app-workout-admin are separate
+// origins from app-workout-api). A blocked-by-CORS fetch() surfaces to
+// the client as a generic network/connection error, which is why this
+// looked like a connectivity problem instead of a server config one.
+await app.register(cors, { origin: true, methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] });
 
 app.get("/health", async () => ({ status: "ok" }));
 
