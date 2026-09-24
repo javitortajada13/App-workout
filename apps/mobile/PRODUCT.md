@@ -11,11 +11,11 @@ adaptive
 Two primary audiences with different jobs:
 
 - **Padel players**, from complete beginners to competitive players, many of whom are new to strength training. They open the app on their phone at the club, court, or gym to follow the session they've been assigned. They also ask the Coach why an exercise is there, or what to do instead when they're missing equipment, something hurts, or it's too hard.
-- **Strength & conditioning coaches**, who build programs, assign them to their own players and track what those players have done. They also write and enrich the exercise knowledge: physical qualities, contraindications, evidence, and sport transfer.
+- **Strength & conditioning coaches**, who build programs and assign them to their players. **Today they do this in a separate, external coaching app, not in this one.** That app is the source of the programs. This app should integrate with it (import or sync) rather than replace it. The seeded program was transcribed from that app's screenshots.
 
 ## Product Purpose
 
-An AI-powered strength & conditioning platform, starting with padel. Every exercise answers "why am I doing this": the physical qualities it trains, its contraindications, how good the evidence is, and how it transfers to the sport. Success means a player understands and trusts the work they're doing, and a coach can deliver structured, explained programming without writing the explanation by hand every time.
+An AI-powered strength & conditioning platform, starting with padel. Every exercise answers "why am I doing this": the physical qualities it trains, its contraindications, how good the evidence is, and how it transfers to the sport. Success means a player understands and trusts the work their coach assigned, and the coach's programming arrives already explained, without the coach writing that explanation by hand.
 
 ## Positioning
 
@@ -30,7 +30,9 @@ The exercise database is the product's actual knowledge, and the AI is only the 
 ## Capabilities and Constraints
 
 - Today: browse programs down to exercise detail (objective, cues, contraindications, evidence rating, sport transfer, and linked progressions, regressions and alternatives), plus a Coach chat grounded in the `search_exercises` and `get_exercise_detail` tools.
-- Required coach capabilities, **not built yet**: build programs, assign them to players and track completion, and author and enrich exercises. There are no accounts, athlete profiles, or ownership yet. That is a deliberate scope cut until the athlete/coach model is designed properly.
+- Program building and assignment happen in the coach's **external app**, which stays the source of truth. The intended direction is to integrate with it (import or sync). The mechanism is **undecided**, and nothing is built yet. Programs currently come in by hand, through the seed.
+- Who authors and enriches exercises (the coach in this app, an admin tool, or the product team) is **undecided**.
+- There are no accounts, athlete profiles, or ownership yet. That is a deliberate scope cut until the athlete/coach model is designed properly.
 - Expo (React Native + Expo Router) for iOS, Android, and web from one codebase. The data model is sport-agnostic, but the v1 product surface is padel-specific on purpose. Don't generalize the UI for other sports before padel is validated.
 - The Coach degrades gracefully without an API key and shows a clear "not configured" message.
 - Exercise video/thumbnail fields exist but aren't populated yet.
@@ -44,7 +46,7 @@ The exercise database is the product's actual knowledge, and the AI is only the 
 
 ## Evidence on Hand
 
-- One real program, "julio y el resto" (20/07/2026–31/07/2026), transcribed from real screenshots in `apps/api/prisma/seed.ts`. Several blocks are knowingly missing. Fill them only from real source screenshots, never from plausible guesses.
+- One real program, "julio y el resto" (20/07/2026–31/07/2026), transcribed from real screenshots of the coach's external app in `apps/api/prisma/seed.ts`. Several blocks are knowingly missing. Fill them only from real source screenshots, never from plausible guesses.
 - Five exercises are fully authored end to end. The rest have a real objective and at least one tag.
 - No testimonials, users, metrics, or published claims exist. Don't invent any.
 
