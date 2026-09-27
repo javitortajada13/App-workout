@@ -1,12 +1,18 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "App Workout",
+    "slug": "app-workout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+    "updates": {
+      "url": "https://u.expo.dev/596c5d72-c23b-4e9c-8763-3dcb759183c3"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -37,6 +43,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "596c5d72-c23b-4e9c-8763-3dcb759183c3"
+      }
     }
   }
 }

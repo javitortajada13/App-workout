@@ -1,0 +1,241 @@
+/* Deliberately minimal -- V1 defers visual polish (see CLAUDE.md /
+   PROJECT_STATE.md). This just needs to be usable by one coach. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f6f6f7;
+  color: #1a1a1a;
+}
+
+a {
+  color: inherit;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  color: white;
+  padding: 24px 16px;
+}
+
+.sidebar h1 {
+  font-size: 16px;
+  margin: 0 0 24px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar nav a {
+  text-decoration: none;
+  color: #ccc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover {
+  background: #333;
+  color: white;
+}
+
+.sidebar button {
+  margin-top: 24px;
+  background: none;
+  border: 1px solid #555;
+  color: #ccc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.main {
+  flex: 1;
+  padding: 32px 40px;
+  max-width: 960px;
+}
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  width: 320px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 13px;
+  color: #555;
+}
+
+input,
+textarea,
+select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+button.primary {
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.secondary {
+  background: white;
+  color: #1a1a1a;
+  border: 1px solid #ccc;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button.danger {
+  background: #fff0f0;
+  color: #b3261e;
+  border: 1px solid #f0c0c0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.error {
+  color: #b3261e;
+  font-size: 13px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.muted {
+  color: #777;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #e8e8e8;
+}
+
+.badge.active {
+  background: #dff4e0;
+  color: #1a6b28;
+}
+
+.badge.draft {
+  background: #fff4d6;
+  color: #7a5c00;
+}
+
+.badge.archived {
+  background: #eee;
+  color: #777;
+}
+
+.tree-level {
+  margin-left: 20px;
+  border-left: 2px solid #eee;
+  padding-left: 16px;
+  margin-top: 10px;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.pill {
+  background: #eee;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #900;
+  font-size: 12px;
+  padding: 0;
+}

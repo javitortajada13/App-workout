@@ -7,20 +7,40 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// Palette from the project's own design-preview artifact ("App Workout —
+// Vista previa de diseño") -- a warm off-white / teal identity that was
+// designed early on but never applied to the real app until now.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#14171A',
+    background: '#FAFAF8',
+    backgroundElement: '#F1F1EE',
+    backgroundSelected: '#E6E8E5',
+    textSecondary: '#5B6169',
+    accent: '#0C7C8C',
+    accentContrast: '#FFFFFF',
+    border: '#E2E4E1',
+    warningBg: '#FBF1E6',
+    warningBorder: '#B8752E',
+    // Coach Note's teal-tinted callout background/border -- the same
+    // validated values from the V4 prototype's --accent-soft tokens, not
+    // a runtime alpha blend of `accent`, so they match exactly.
+    coachNoteBg: '#E4F3F5',
+    coachNoteBorder: '#C7E6EA',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#F2F3F4',
+    background: '#131518',
+    backgroundElement: '#1C1F22',
+    backgroundSelected: '#272B2F',
+    textSecondary: '#98A0A7',
+    accent: '#35D6C7',
+    accentContrast: '#06231F',
+    border: '#2A2E32',
+    warningBg: '#2A2216',
+    warningBorder: '#E0A85C',
+    coachNoteBg: '#10302E',
+    coachNoteBorder: '#1A4640',
   },
 } as const;
 

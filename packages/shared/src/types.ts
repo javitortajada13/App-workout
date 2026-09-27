@@ -17,6 +17,7 @@ export type EvidenceRating =
   | "limited"
   | "conflicting"
   | "insufficient";
+export type ProgramStatus = "draft" | "active" | "archived";
 
 export interface PhysicalQualityRef {
   id: string;
@@ -45,19 +46,23 @@ export interface ExerciseSummary {
 }
 
 export interface ExerciseLinkRef {
+  id: string;
   relationshipType: ExerciseLinkType;
   rationale: string | null;
   exercise: ExerciseSummary;
 }
 
 export interface SportTransferRef {
+  id: string;
   sportName: string;
   description: string;
   evidenceRating: EvidenceRating;
 }
 
 export interface ExerciseDetail extends ExerciseSummary {
+  aliases: string[];
   objective: string;
+  description: string | null;
   movementComplexity: string | null;
   contraindications: string | null;
   coachingCues: string | null;
@@ -115,6 +120,22 @@ export interface ProgramSummary {
 
 export interface ProgramDetail extends ProgramSummary {
   sessions: SessionSummary[];
+}
+
+// What GET /me/programs returns -- athlete-scoped, so it also carries
+// status (an athlete never sees archived programs, but a coach does, and
+// needs to be able to tell them apart).
+export interface MyProgramSummary extends ProgramSummary {
+  status: ProgramStatus;
+}
+
+export interface AthleteSummary {
+  id: string;
+  email: string;
+  name: string | null;
+  athleteLevel: string | null;
+  coachNotes: string | null;
+  activeProgram: { id: string; name: string } | null;
 }
 
 export interface ChatMessage {

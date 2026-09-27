@@ -3,8 +3,9 @@
 // directly -- that's the point. The model selects and explains; it never
 // recalls exercise facts from its own memory.
 import type Anthropic from "@anthropic-ai/sdk";
+import type { Lang } from "../auth.js";
 import { prisma } from "../db.js";
-import { loadExerciseDetail } from "../mappers.js";
+import { loadExerciseDetail, pick } from "../mappers.js";
 
 export const CHAT_TOOLS: Anthropic.Tool[] = [
   {
@@ -53,7 +54,7 @@ export interface SearchExercisesInput {
   maxResults?: number;
 }
 
-export async function searchExercises(input: SearchExercisesInput) {
+export async function searchExercises(input: SearchExercisesInput, lang: Lang = "es") {
   const equipmentAvailable = input.equipmentAvailable;
 
   const exercises = await prisma.exercise.findMany({
@@ -84,14 +85,27 @@ export async function searchExercises(input: SearchExercisesInput) {
         : {}),
     },
     take: input.maxResults ?? 8,
-    select: { id: true, name: true, objective: true, contraindications: true },
+    select: {
+      id: true,
+      name: true,
+      nameEn: true,
+      objective: true,
+      objectiveEn: true,
+      contraindications: true,
+      contraindicationsEn: true,
+    },
   });
 
-  return exercises;
+  return exercises.map((e) => ({
+    id: e.id,
+    name: pick(lang, e.name, e.nameEn),
+    objective: pick(lang, e.objective, e.objectiveEn),
+    contraindications: pick(lang, e.contraindications, e.contraindicationsEn),
+  }));
 }
 
-export async function getExerciseDetailTool(exerciseId: string) {
-  const exercise = await loadExerciseDetail(exerciseId);
+export async function getExerciseDetailTool(exerciseId: string, lang: Lang = "es") {
+  const exercise = await loadExerciseDetail(exerciseId, lang);
   if (!exercise) return { error: `No exercise found with id ${exerciseId}` };
   return exercise;
 }

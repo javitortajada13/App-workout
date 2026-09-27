@@ -1,0 +1,89 @@
+# Render "Blueprint" for the API service. Lets the app be deployed by
+# connecting this repo in the Render dashboard, instead of hand-configuring
+# build/start commands there -- see PROJECT_STATE.md section 13 for why
+# (no reliable local machine, so the API needs to run somewhere on the real
+# internet that both this dev process and a physical iPhone can reach).
+#
+# DATABASE_URL, SUPABASE_URL and ANTHROPIC_API_KEY are intentionally marked
+# `sync: false`: Render will prompt for them once in its own dashboard and
+# store them there -- they must never be written into this file or any
+# other file in the repo.
+services:
+  - type: web
+    name: app-workout-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=apps/api
+    startCommand: npm run db:migrate:deploy --workspace=apps/api && npm run db:seed --workspace=apps/api && node apps/api/dist/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  # A free, install-nothing way for anyone to open the app: a plain link in
+  # Safari/Chrome, no App Store, no Apple Developer Program, no Expo Go.
+  # Expo Router's web target already produces a static export (confirmed:
+  # `npx expo export -p web` succeeds and prerenders every route including
+  # /login) -- Render's static-site hosting just serves those files, no
+  # Node process needed, and (unlike the free web-service plan above) it
+  # doesn't spin down after inactivity. The env values below are the same
+  # public, non-secret ones baked into the mobile app's own EAS Update
+  # publishes -- see .github/workflows/eas-update.yml.
+  - type: web
+    name: app-workout-web
+    runtime: static
+    buildCommand: npm install && cd apps/mobile && npx expo export -p web
+    staticPublishPath: apps/mobile/dist
+    # Dynamic routes ([id].tsx) export as a literal file named "[id].html"
+    # -- e.g. session/[id].html, not one file per real session id -- so a
+    # direct/refreshed visit to /session/<realId> 404s without these
+    # rewrites (confirmed by inspecting `npx expo export -p web`'s dist/
+    # output). Client-side navigation from within the app never hit this
+    # (no full page load), which is why it went unnoticed until someone
+    # opened a session/exercise link directly. Same underlying issue as
+    # app-workout-admin's `routes` block below, different cause (Expo's
+    # per-route static files vs. a single SPA index.html).
+    routes:
+      - type: rewrite
+        source: /session/*
+        destination: /session/[id].html
+      - type: rewrite
+        source: /exercise/*
+        destination: /exercise/[id].html
+      - type: rewrite
+        source: /program/*
+        destination: /program/[id].html
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://app-workout-api.onrender.com
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        value: https://edljvcpkkygdnsfrpnmm.supabase.co
+      - key: EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE
+
+  # M5: the coach-only admin web app (apps/admin), a separate Vite/React
+  # app per the standing product decision (PROJECT_STATE.md section 13 --
+  # the athlete-facing mobile app stays athlete-only). Free static site,
+  # same reasoning as app-workout-web above. `routes` is needed because
+  # this is a client-side-routed SPA (react-router): without the rewrite,
+  # reloading on e.g. /programs/abc would 404 instead of serving the app.
+  - type: web
+    name: app-workout-admin
+    runtime: static
+    buildCommand: npm install && npm run build --workspace=apps/admin
+    staticPublishPath: apps/admin/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://app-workout-api.onrender.com
+      - key: VITE_SUPABASE_URL
+        value: https://edljvcpkkygdnsfrpnmm.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_11ERsdvWe62oGpxHziRH_Q_8tjZVVAE

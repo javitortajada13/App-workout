@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import type { SessionDetail } from "@app-workout/shared";
 
+import { CoachNote } from "@/components/coach-note";
+import { ExerciseRow } from "@/components/exercise-row";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { Type } from "@/constants/typography";
+import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
-import { formatPrescription } from "@/lib/format";
 import { fetchSession } from "@/lib/api";
 
 export default function SessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const router = useRouter();
+  const { strings } = useLanguage();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +39,9 @@ export default function SessionScreen() {
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       {error && (
         <ThemedView style={styles.container}>
-          <ThemedText>No se pudo cargar la sesion: {error}</ThemedText>
+          <ThemedText>
+            {strings.session.loadError}: {error}
+          </ThemedText>
         </ThemedView>
       )}
       {!error && !session && (
@@ -47,58 +52,37 @@ export default function SessionScreen() {
 
       {session && (
         <ScrollView contentContainerStyle={styles.container}>
-          <ThemedText type="title" style={styles.title}>
-            {session.label}
-          </ThemedText>
+          <ThemedText type="title">{session.label}</ThemedText>
 
           {session.blocks.length === 0 && (
             <ThemedView type="backgroundElement" style={styles.emptyBlock}>
-              <ThemedText themeColor="textSecondary">
-                Todavia no hay bloques cargados para esta sesion.
-              </ThemedText>
+              <ThemedText themeColor="textSecondary">{strings.session.noBlocks}</ThemedText>
             </ThemedView>
           )}
 
           {session.blocks.map((block) => (
-            <ThemedView key={block.id} style={styles.block}>
-              <ThemedView style={styles.blockHeader}>
-                <ThemedText type="smallBold">Bloque {block.order}</ThemedText>
-                {block.rounds ? (
-                  <ThemedText themeColor="textSecondary" type="small">
-                    {block.rounds} veces
-                  </ThemedText>
-                ) : null}
-              </ThemedView>
-
-              {block.purpose && (
-                <ThemedText themeColor="textSecondary" type="small" style={styles.purpose}>
-                  {block.purpose}
+            <View key={block.id} style={styles.block}>
+              <View style={styles.blockHeader}>
+                <ThemedText style={[styles.blockLabel, { color: theme.text }]}>
+                  {strings.session.block} {block.order}
                 </ThemedText>
-              )}
-
-              <ThemedView style={styles.exerciseList}>
-                {block.exercises.map((be) => (
-                  <Pressable
-                    key={be.id}
-                    onPress={() => router.push(`/exercise/${be.exercise.id}`)}
-                    style={({ pressed }) => [
-                      styles.exerciseRow,
-                      { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-                    ]}
-                  >
-                    <ThemedText>{be.exercise.name}</ThemedText>
-                    <ThemedText themeColor="textSecondary" type="small">
-                      {formatPrescription(be)}
+                {block.rounds ? (
+                  <View style={[styles.roundsChip, { backgroundColor: theme.coachNoteBg }]}>
+                    <ThemedText style={[styles.roundsText, { color: theme.accent }]}>
+                      {block.rounds} {strings.session.times}
                     </ThemedText>
-                    {be.instanceNote && (
-                      <ThemedText themeColor="textSecondary" type="small" style={styles.note}>
-                        {be.instanceNote}
-                      </ThemedText>
-                    )}
-                  </Pressable>
+                  </View>
+                ) : null}
+              </View>
+
+              {block.purpose && <CoachNote label={strings.session.coachNoteLabel} text={block.purpose} />}
+
+              <View style={styles.exerciseList}>
+                {block.exercises.map((be) => (
+                  <ExerciseRow key={be.id} be={be} previewLabel={strings.exercise.videoPreview} />
                 ))}
-              </ThemedView>
-            </ThemedView>
+              </View>
+            </View>
           ))}
         </ScrollView>
       )}
@@ -109,12 +93,11 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
-  title: { textAlign: "left", fontSize: 28, lineHeight: 34 },
   emptyBlock: { borderRadius: Spacing.three, padding: Spacing.three },
   block: { gap: Spacing.two },
-  blockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
-  purpose: { fontStyle: "italic" },
-  exerciseList: { gap: Spacing.two },
-  exerciseRow: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
-  note: { fontStyle: "italic" },
+  blockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
+  blockLabel: { ...Type.label, fontSize: 12, letterSpacing: 0.24, textTransform: "uppercase" },
+  roundsChip: { borderRadius: 999, paddingHorizontal: Spacing.two, paddingVertical: 3 },
+  roundsText: { ...Type.label, fontSize: 12, fontVariant: ["tabular-nums"] },
+  exerciseList: { gap: 2 },
 });
