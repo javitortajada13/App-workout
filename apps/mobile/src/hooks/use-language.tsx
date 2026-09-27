@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
@@ -32,6 +32,12 @@ interface LanguageContextValue {
   language: Lang;
   strings: Strings;
   setLanguage: (lang: Lang) => Promise<void>;
+  // Local-only, no network call -- for the login screen, which has no
+  // bearer token yet to authorize PATCH /me. Lets someone who can't read
+  // the app's current language switch it before they can even log in. See
+  // the auth-state-change effect below for how an explicit pre-login pick
+  // becomes the athlete's real saved preference once they do log in.
+  setLocalLanguage: (lang: Lang) => void;
   // Set when the last setLanguage() call failed to save server-side --
   // the toggle used to update the screen instantly regardless of whether
   // the PATCH actually succeeded, which silently left the UI showing
@@ -51,6 +57,14 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Lang>("es");
   const [error, setError] = useState<string | null>(null);
+  // Tracks an explicit pre-login pick (login.tsx's language switch) made
+  // THIS app session, so it can be pushed to the server as the athlete's
+  // real preference right after they log in -- otherwise fetchMe()'s
+  // server value would silently win and revert their choice back to
+  // whatever was last saved (e.g. a fresh Profile's "es" default), which
+  // would defeat the entire point of letting someone pick a language
+  // before they can read the login screen at all.
+  const explicitChoiceRef = useRef<Lang | null>(null);
 
   // Read the last-known language immediately so the UI doesn't flash back
   // to Spanish on every app open while the network round-trip to /me is
@@ -65,7 +79,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) return;
       fetchMe()
-        .then((me) => {
+        .then(async (me) => {
+          const pending = explicitChoiceRef.current;
+          if (pending && pending !== me.language) {
+            try {
+              const updated = await updateLanguage(pending);
+              explicitChoiceRef.current = null;
+              setLanguageState(updated.language);
+              await setCached(updated.language);
+              return;
+            } catch (err) {
+              // Couldn't sync the pre-login pick server-side (e.g. offline)
+              // -- fall through and use whatever the server actually has
+              // rather than leaving the UI stuck on an unsaved choice.
+              console.error("Failed to sync pre-login language choice", err);
+            }
+          }
+          explicitChoiceRef.current = null;
           setLanguageState(me.language);
           setCached(me.language).catch(() => {});
         })
@@ -73,6 +103,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  function setLocalLanguage(lang: Lang) {
+    explicitChoiceRef.current = lang;
+    setLanguageState(lang);
+    setCached(lang).catch(() => {});
+  }
 
   // Deliberately NOT optimistic: wait for the server to actually confirm
   // the save before changing what the screen shows, and surface a real
@@ -94,7 +130,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ language, strings: STRINGS[language], setLanguage, error }}>
+    <LanguageContext.Provider
+      value={{ language, strings: STRINGS[language], setLanguage, setLocalLanguage, error }}
+    >
       {children}
     </LanguageContext.Provider>
   );

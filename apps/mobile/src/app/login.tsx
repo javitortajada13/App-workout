@@ -7,7 +7,48 @@ import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
+import type { Lang } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+
+// Not gated behind login: someone who doesn't read the app's current
+// language has no way to even understand "Iniciar sesion" / "Log in" to
+// get past this screen otherwise. Always shown in each language's own
+// name (never translated) -- the same convention profile.tsx already uses
+// for its language toggle. Uses setLocalLanguage (no bearer token exists
+// yet); see use-language.tsx for how an explicit pick here becomes the
+// athlete's real saved preference once they actually log in.
+function LoginLanguageSwitch() {
+  const theme = useTheme();
+  const { language, setLocalLanguage } = useLanguage();
+  const options: { lang: Lang; label: string }[] = [
+    { lang: "es", label: "Español" },
+    { lang: "en", label: "English" },
+  ];
+  return (
+    <ThemedView style={styles.langSwitchRow}>
+      {options.map(({ lang, label }) => {
+        const active = language === lang;
+        return (
+          <Pressable
+            key={lang}
+            onPress={() => setLocalLanguage(lang)}
+            style={({ pressed }) => [
+              styles.langPill,
+              {
+                backgroundColor: active ? theme.accent : theme.backgroundElement,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <ThemedText type="small" style={active ? { color: theme.accentContrast } : undefined}>
+              {label}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </ThemedView>
+  );
+}
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -35,6 +76,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LoginLanguageSwitch />
       <ThemedView style={styles.container}>
         <ThemedText type="title">{strings.login.title}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
@@ -91,6 +133,19 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
+  langSwitchRow: {
+    position: "absolute",
+    top: Spacing.four,
+    right: Spacing.four,
+    flexDirection: "row",
+    gap: Spacing.one,
+    zIndex: 1,
+  },
+  langPill: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 999,
+  },
   container: {
     flex: 1,
     justifyContent: "center",
