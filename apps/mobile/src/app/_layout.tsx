@@ -1,13 +1,30 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Stack } from "expo-router";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import type { Session } from "@supabase/supabase-js";
 
 import { ThemedView } from "@/components/themed-view";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_400Regular_Italic,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  Type,
+} from "@/constants/typography";
 import { LanguageProvider, useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMe } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+
+// Keep the native splash screen up until the app's one custom font has
+// loaded, so the UI never flashes from a system font to Plus Jakarta Sans
+// after first paint. Called in module scope (not inside a component),
+// per expo-splash-screen's own guidance -- called too late otherwise.
+SplashScreen.preventAutoHideAsync();
 
 // `undefined` = still checking for a stored session, `null` = confirmed
 // logged out. Uses Stack.Protected (the current expo-router API for
@@ -29,6 +46,18 @@ function RootLayoutNav() {
   const theme = useTheme();
   const { strings } = useLanguage();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_400Regular_Italic,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
     supabase.auth
@@ -58,7 +87,7 @@ function RootLayoutNav() {
     }
   }, [session]);
 
-  if (session === undefined) {
+  if (session === undefined || (!fontsLoaded && !fontError)) {
     return (
       <ThemedView style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={theme.text} />
@@ -71,7 +100,7 @@ function RootLayoutNav() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
-        headerTitleStyle: { fontWeight: "700" },
+        headerTitleStyle: Type.label,
         headerShadowVisible: false,
         contentStyle: { backgroundColor: theme.background },
       }}

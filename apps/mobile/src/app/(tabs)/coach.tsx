@@ -86,7 +86,7 @@ export default function CoachScreen() {
               { backgroundColor: theme.accent, opacity: pressed || sending || !input.trim() ? 0.5 : 1 },
             ]}
           >
-            <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+            <ThemedText style={{ color: theme.accentContrast }} type="button">
               {strings.coach.send}
             </ThemedText>
           </Pressable>

@@ -153,7 +153,7 @@ export async function loadSessionDetail(
         order: be.order,
         prescriptionType: be.prescriptionType,
         sets: be.sets,
-        repsOrDuration: be.repsOrDuration,
+        repsOrDuration: pick(lang, be.repsOrDuration, be.repsOrDurationEn),
         load: be.load,
         tempo: be.tempo,
         rest: be.rest,

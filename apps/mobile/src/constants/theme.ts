@@ -22,6 +22,11 @@ export const Colors = {
     border: '#E2E4E1',
     warningBg: '#FBF1E6',
     warningBorder: '#B8752E',
+    // Coach Note's teal-tinted callout background/border -- the same
+    // validated values from the V4 prototype's --accent-soft tokens, not
+    // a runtime alpha blend of `accent`, so they match exactly.
+    coachNoteBg: '#E4F3F5',
+    coachNoteBorder: '#C7E6EA',
   },
   dark: {
     text: '#F2F3F4',
@@ -34,6 +39,8 @@ export const Colors = {
     border: '#2A2E32',
     warningBg: '#2A2216',
     warningBorder: '#E0A85C',
+    coachNoteBg: '#10302E',
+    coachNoteBorder: '#1A4640',
   },
 } as const;
 

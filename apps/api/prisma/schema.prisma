@@ -178,6 +178,11 @@ model BlockExercise {
   prescriptionType PrescriptionType  @default(reps)
   sets             Int?
   repsOrDuration   String
+  // English translation of `repsOrDuration` -- needed because this field
+  // often bakes in a Spanish qualifier word ("por lado", "pasos", "metros
+  // ida y vuelta", "segundos"), not just a bare number. Same nullable,
+  // fall-back-to-Spanish pattern as every other translated field.
+  repsOrDurationEn String?
   load             String?
   tempo            String?
   rest             String?

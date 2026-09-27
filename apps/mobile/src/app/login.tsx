@@ -40,7 +40,7 @@ function LoginLanguageSwitch() {
               },
             ]}
           >
-            <ThemedText type="small" style={active ? { color: theme.accentContrast } : undefined}>
+            <ThemedText type="button" style={active ? { color: theme.accentContrast } : undefined}>
               {label}
             </ThemedText>
           </Pressable>
@@ -120,7 +120,7 @@ export default function LoginScreen() {
             {submitting ? (
               <ActivityIndicator color={theme.accentContrast} />
             ) : (
-              <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
+              <ThemedText style={{ color: theme.accentContrast }} type="button">
                 {strings.login.submit}
               </ThemedText>
             )}

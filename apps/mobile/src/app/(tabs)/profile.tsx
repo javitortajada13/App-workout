@@ -37,7 +37,7 @@ function LanguageOption({ lang, label }: { lang: Lang; label: string }) {
       {saving ? (
         <ActivityIndicator color={active ? theme.accentContrast : theme.text} />
       ) : (
-        <ThemedText type="smallBold" style={active ? { color: theme.accentContrast } : undefined}>
+        <ThemedText type="button" style={active ? { color: theme.accentContrast } : undefined}>
           {label}
         </ThemedText>
       )}
@@ -77,7 +77,7 @@ export default function ProfileScreen() {
             { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <ThemedText type="smallBold">{strings.profile.signOut}</ThemedText>
+          <ThemedText type="button">{strings.profile.signOut}</ThemedText>
         </Pressable>
       </ThemedView>
     </SafeAreaView>

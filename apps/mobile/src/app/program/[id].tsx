@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ProgramDetail } from "@app-workout/shared";
@@ -7,6 +7,7 @@ import type { ProgramDetail } from "@app-workout/shared";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
+import { Type } from "@/constants/typography";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchProgram } from "@/lib/api";
@@ -60,21 +61,31 @@ export default function ProgramScreen() {
                   onPress={() => router.push(`/session/${item.id}`)}
                   style={({ pressed }) => [
                     styles.row,
-                    { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: pressed ? 0.85 : 1 },
                   ]}
                 >
-                  <ThemedView style={styles.rowHeader}>
-                    <ThemedText type="smallBold">{item.label}</ThemedText>
-                    {item.role !== "main" && (
-                      <ThemedText themeColor="textSecondary" type="small">
-                        {strings.program.role[item.role] ?? item.role}
-                      </ThemedText>
-                    )}
-                  </ThemedView>
-                  <ThemedText themeColor="textSecondary" type="small">
-                    {item.blockCount === 0
-                      ? strings.program.noBlocks
-                      : `${item.blockCount} ${strings.program.blocks} · ${item.exerciseCount} ${strings.program.exercises}`}
+                  <View style={[styles.dayChip, { backgroundColor: theme.coachNoteBg }]}>
+                    <ThemedText style={[styles.dayChipText, { color: theme.accent }]}>{item.order}</ThemedText>
+                  </View>
+                  <View style={styles.rowMain}>
+                    <View style={styles.rowHeader}>
+                      <ThemedText type="smallBold">{item.label}</ThemedText>
+                      {item.role !== "main" && (
+                        <View style={[styles.roleTag, { backgroundColor: theme.background }]}>
+                          <ThemedText style={[styles.roleTagText, { color: theme.textSecondary }]}>
+                            {strings.program.role[item.role] ?? item.role}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                    <ThemedText themeColor="textSecondary" type="small">
+                      {item.blockCount === 0
+                        ? strings.program.noBlocks
+                        : `${item.blockCount} ${strings.program.blocks} · ${item.exerciseCount} ${strings.program.exercises}`}
+                    </ThemedText>
+                  </View>
+                  <ThemedText themeColor="textSecondary" style={styles.chevron}>
+                    &#8250;
                   </ThemedText>
                 </Pressable>
               )}
@@ -90,6 +101,19 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: Spacing.two },
   list: { gap: Spacing.two, paddingTop: Spacing.two },
-  row: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.half },
-  rowHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.three - 2,
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    padding: Spacing.three - 1,
+  },
+  dayChip: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  dayChipText: { ...Type.heading, fontSize: 16, fontVariant: ["tabular-nums"] },
+  rowMain: { flex: 1, gap: 2 },
+  rowHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.one },
+  roleTag: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  roleTagText: { ...Type.label, fontSize: 10, letterSpacing: 0.24, textTransform: "uppercase" },
+  chevron: { fontSize: 18 },
 });

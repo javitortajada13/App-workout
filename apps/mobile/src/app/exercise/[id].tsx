@@ -4,8 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ExerciseDetail } from "@app-workout/shared";
 
+import { CoachNote } from "@/components/coach-note";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Thumbnail } from "@/components/thumbnail";
 import { Spacing } from "@/constants/theme";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
@@ -115,26 +117,21 @@ export default function ExerciseScreen() {
               </ThemedText>
             </Pressable>
           </ThemedView>
+        ) : exercise.videoUrl ? (
+          // Native: no in-app YouTube embed, so the poster itself is the
+          // tappable affordance -- same end behavior as before (opens the
+          // video externally via Linking), now with the real video-hero
+          // poster/play-glyph/tag the approved design calls for instead of
+          // a bare button with no preview at all.
+          <Pressable onPress={() => Linking.openURL(exercise.videoUrl!)}>
+            <Thumbnail videoUrl={exercise.videoUrl} size="hero" previewLabel={strings.exercise.videoPreview} />
+          </Pressable>
         ) : (
-          exercise.videoUrl && (
-            <Pressable
-              onPress={() => Linking.openURL(exercise.videoUrl!)}
-              style={({ pressed }) => [
-                styles.videoButton,
-                { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              <ThemedText style={{ color: theme.accentContrast }} type="smallBold">
-                {strings.exercise.watchVideo}
-              </ThemedText>
-            </Pressable>
-          )
+          <Thumbnail videoUrl={null} size="hero" previewLabel={strings.exercise.videoPreview} noVideoLabel={strings.exercise.noVideoLabel} />
         )}
 
         {exercise.coachingCues && (
-          <Section title={strings.exercise.howTo}>
-            <ThemedText>{exercise.coachingCues}</ThemedText>
-          </Section>
+          <CoachNote label={strings.exercise.coachCuesLabel} text={exercise.coachingCues} variant="cues" />
         )}
 
         {exercise.equipment.length > 0 && (
@@ -223,10 +220,10 @@ export default function ExerciseScreen() {
                   { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
                 ]}
               >
-                <ThemedText type="smallBold">{link.exercise.name}</ThemedText>
-                <ThemedText type="small" style={{ color: theme.accent, fontWeight: "700" }}>
+                <ThemedText type="label" style={{ color: theme.accent, marginBottom: 3 }}>
                   {strings.exercise.link[link.relationshipType] ?? link.relationshipType}
                 </ThemedText>
+                <ThemedText type="smallBold">{link.exercise.name}</ThemedText>
                 {link.rationale && (
                   <ThemedText themeColor="textSecondary" type="small">
                     {link.rationale}
@@ -253,17 +250,11 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
   chip: { flexDirection: "row", borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   warningBox: { borderWidth: 1, borderRadius: Spacing.three, padding: Spacing.three },
-  videoButton: {
-    alignSelf: "flex-start",
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-  },
   videoBlock: { gap: Spacing.two },
   videoEmbed: {
     width: "100%",
     aspectRatio: 16 / 9,
-    borderRadius: Spacing.three,
+    borderRadius: 22,
     overflow: "hidden",
   },
   transferRow: { gap: Spacing.half },

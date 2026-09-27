@@ -1,6 +1,7 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
+import { Type } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -11,6 +12,7 @@ export type ThemedTextProps = TextProps & {
     | 'smallBold'
     | 'subtitle'
     | 'label'
+    | 'button'
     | 'link'
     | 'linkPrimary'
     | 'code';
@@ -30,6 +32,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
         type === 'label' && styles.label,
+        type === 'button' && styles.button,
         type === 'link' && styles.link,
         type === 'linkPrimary' && [styles.linkPrimary, { color: theme.accent }],
         type === 'code' && styles.code,
@@ -40,50 +43,70 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
+// V4's approved 5-tier weight ladder (see constants/typography.ts): 400
+// reading / 500 metadata / 600 names / 700 labels+buttons / 800 headings.
+// Each ThemedText `type` below maps onto exactly one tier so the ladder
+// stays consistent everywhere it's used, not just in the new components.
 const styles = StyleSheet.create({
+  // metadata tier -- secondary/supporting text (dates, counts, captions).
   small: {
+    ...Type.meta,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 500,
   },
+  // "name" tier -- list-row titles (session/program/exercise names, link
+  // names). Renamed in spirit from "smallBold" (which pre-T2 conflated
+  // this with the button/label tier) but kept as the same prop value so
+  // existing call sites don't all need renaming -- only the ones that were
+  // actually buttons moved to the new `button` type below.
   smallBold: {
+    ...Type.name,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 700,
   },
+  // reading tier -- ordinary body copy.
   default: {
+    ...Type.reading,
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
   },
+  // heading tier -- page titles.
   title: {
+    ...Type.heading,
     fontSize: 26,
-    fontWeight: 800,
     lineHeight: 32,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
+  // label tier -- sub-headings (empty-state titles, prominent card names).
   subtitle: {
+    ...Type.label,
     fontSize: 19,
     lineHeight: 24,
-    fontWeight: 700,
   },
-  // Small uppercase section headers ("POR QUE", "MUSCULOS", ...) --
-  // matches the design-preview artifact's `.section .label` style.
+  // label tier -- small uppercase section headers ("POR QUE", "MUSCULOS", ...).
   label: {
+    ...Type.label,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: 700,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
+  // label tier -- interactive button/toggle labels (distinct from smallBold
+  // "names": a button says "Enviar", a name says "Sentadilla dividida...").
+  button: {
+    ...Type.label,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   link: {
+    ...Type.reading,
     lineHeight: 30,
     fontSize: 14,
   },
   linkPrimary: {
+    ...Type.label,
     lineHeight: 30,
     fontSize: 14,
-    fontWeight: 700,
   },
   code: {
     fontFamily: Fonts.mono,
