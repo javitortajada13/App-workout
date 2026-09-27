@@ -10,6 +10,7 @@ import { Spacing } from "@/constants/theme";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMyPrograms } from "@/lib/api";
+import { plural } from "@/lib/i18n";
 
 export default function ProgramsScreen() {
   const theme = useTheme();
@@ -60,7 +61,7 @@ export default function ProgramsScreen() {
             >
               <ThemedText type="smallBold">{item.name}</ThemedText>
               <ThemedText themeColor="textSecondary" type="small">
-                {item.sportName} · {item.dayCount} {strings.programs.sessionsCount} ·{" "}
+                {item.sportName} · {item.dayCount} {plural(item.dayCount, strings.programs.session)} ·{" "}
                 {new Date(item.startDate).toLocaleDateString()} -{" "}
                 {new Date(item.endDate).toLocaleDateString()}
               </ThemedText>

@@ -11,6 +11,7 @@ import { Type } from "@/constants/typography";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchProgram } from "@/lib/api";
+import { plural } from "@/lib/i18n";
 
 export default function ProgramScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -81,7 +82,7 @@ export default function ProgramScreen() {
                     <ThemedText themeColor="textSecondary" type="small">
                       {item.blockCount === 0
                         ? strings.program.noBlocks
-                        : `${item.blockCount} ${strings.program.blocks} · ${item.exerciseCount} ${strings.program.exercises}`}
+                        : `${item.blockCount} ${plural(item.blockCount, strings.program.block)} · ${item.exerciseCount} ${plural(item.exerciseCount, strings.program.exercise)}`}
                     </ThemedText>
                   </View>
                   <ThemedText themeColor="textSecondary" style={styles.chevron}>

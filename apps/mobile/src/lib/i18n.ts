@@ -11,6 +11,18 @@
 
 export type Lang = "es" | "en";
 
+// Spanish and English each only have two plural categories (CLDR "one" /
+// "other"), so a flat {one, other} pair is enough -- no need for a full
+// pluralization library for three nouns.
+export interface PluralForms {
+  one: string;
+  other: string;
+}
+
+export function plural(count: number, forms: PluralForms): string {
+  return count === 1 ? forms.one : forms.other;
+}
+
 const es = {
   tabs: { home: "Inicio", coach: "Coach", programs: "Programas", profile: "Perfil" },
   stack: { program: "Programa", session: "Sesion", exercise: "Ejercicio" },
@@ -26,7 +38,7 @@ const es = {
     subtitle: "Tu coach de preparacion fisica para padel",
     connectionError: "No se pudo conectar con el servidor",
     currentProgram: "Programa actual",
-    sessionsCount: "sesiones",
+    session: { one: "sesion", other: "sesiones" },
     noProgram: "Todavia no hay programas asignados.",
     askCoach: "Preguntale al coach",
     startHere: "Empieza por aqui",
@@ -36,13 +48,13 @@ const es = {
     title: "Programas",
     connectionError: "No se pudo conectar con el servidor",
     noPrograms: "Todavia no hay programas.",
-    sessionsCount: "sesiones",
+    session: { one: "sesion", other: "sesiones" },
   },
   program: {
     loadError: "No se pudo cargar el programa",
     noBlocks: "Sin bloques todavia",
-    blocks: "bloques",
-    exercises: "ejercicios",
+    block: { one: "bloque", other: "bloques" },
+    exercise: { one: "ejercicio", other: "ejercicios" },
     role: { warmup: "Calentamiento", main: "Principal", recovery: "Recuperacion" },
   },
   session: {
@@ -118,7 +130,7 @@ const en = {
     subtitle: "Your padel strength & conditioning coach",
     connectionError: "Couldn't connect to the server",
     currentProgram: "Current program",
-    sessionsCount: "sessions",
+    session: { one: "session", other: "sessions" },
     noProgram: "No program assigned yet.",
     askCoach: "Ask the coach",
     startHere: "Start here",
@@ -128,13 +140,13 @@ const en = {
     title: "Programs",
     connectionError: "Couldn't connect to the server",
     noPrograms: "No programs yet.",
-    sessionsCount: "sessions",
+    session: { one: "session", other: "sessions" },
   },
   program: {
     loadError: "Couldn't load the program",
     noBlocks: "No blocks yet",
-    blocks: "blocks",
-    exercises: "exercises",
+    block: { one: "block", other: "blocks" },
+    exercise: { one: "exercise", other: "exercises" },
     role: { warmup: "Warm-up", main: "Main", recovery: "Recovery" },
   },
   session: {

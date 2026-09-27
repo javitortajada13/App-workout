@@ -11,6 +11,7 @@ import { Type } from "@/constants/typography";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { fetchMyPrograms, fetchProgram } from "@/lib/api";
+import { plural } from "@/lib/i18n";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -98,8 +99,8 @@ export default function HomeScreen() {
               {targetSession.label}
             </ThemedText>
             <ThemedText style={[styles.heroMeta, { color: theme.accentContrast }]}>
-              {targetSession.blockCount} {strings.program.blocks} · {targetSession.exerciseCount}{" "}
-              {strings.program.exercises}
+              {targetSession.blockCount} {plural(targetSession.blockCount, strings.program.block)} ·{" "}
+              {targetSession.exerciseCount} {plural(targetSession.exerciseCount, strings.program.exercise)}
             </ThemedText>
             <View style={[styles.heroCta, { backgroundColor: theme.accentContrast + "2E" }]}>
               <ThemedText style={[styles.heroCtaText, { color: theme.accentContrast }]}>
@@ -127,7 +128,7 @@ export default function HomeScreen() {
               <View style={styles.programRowMain}>
                 <ThemedText type="smallBold">{current.name}</ThemedText>
                 <ThemedText themeColor="textSecondary" type="small">
-                  {current.sportName} · {current.dayCount} {strings.home.sessionsCount}
+                  {current.sportName} · {current.dayCount} {plural(current.dayCount, strings.home.session)}
                 </ThemedText>
               </View>
               <ThemedText themeColor="textSecondary" style={styles.chevron}>
